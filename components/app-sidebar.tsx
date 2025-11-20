@@ -3,7 +3,6 @@
 import * as React from "react"
 import {
   LucideCar,
-  LucideCarTaxiFront,
   LucideHome,
   LucidePlusCircle,
   LucideStar,
@@ -34,11 +33,6 @@ const data = {
   teams: [
     {
       name: "Ride4Uni",
-      logo: LucideCarTaxiFront,
-      plan: "Driver",
-    },
-    {
-      name: "Ride4Uni.",
       logo: PersonStanding,
       plan: "User",
     }
@@ -156,7 +150,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>
-        {/* <NavMain items={data.navMain} /> */}
         <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
