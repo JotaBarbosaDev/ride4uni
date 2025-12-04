@@ -123,7 +123,26 @@ export default function Page() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                
+                <div className="flex">
+                  <div>
+                    <div className="w-3 h-3 rounded-full bg-red-500 mr-2.5 mt-3"></div>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Pick-up</p>
+                    <p>Viana do Castelo</p>
+                  </div>
+                </div>
+
+                <div className="w-full h-16 border-l border-black ml-[5px] -mt-[25px]"></div>
+                <div className="flex">
+                  <div>
+                    <div className="w-3 h-3 rounded-full bg-red-500 mr-2.5 mt-3"></div>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Pick-up</p>
+                    <p>Viana do Castelo</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
