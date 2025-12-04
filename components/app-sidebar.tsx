@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar"
 
 // This is sample data.
-const data = {
+export const data = {
   user: {
     name: "User",
     rating:
@@ -127,7 +127,7 @@ const data = {
   projects: [
     {
       name: "Home",
-      url: "#",
+      url: "/",
       icon: LucideHome,
     },
     {

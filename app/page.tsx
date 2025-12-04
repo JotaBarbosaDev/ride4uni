@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {Car, Users, ChartNoAxesCombined, ActivityIcon} from "lucide-react";
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
+import {LucideStar} from "lucide-react";
 
 
 export default function Page() {
@@ -94,7 +96,37 @@ export default function Page() {
               </Card>
             </div>
           </div>
-          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min" />
+
+          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min">
+            <Card className="max-w-[600px]">
+              <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex w-full justify-between text-sm font-medium">
+                  <div className="flex flex-row gap-2">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src="/" alt="edw" />
+                      <AvatarFallback className="rounded-lg">U</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">User</span>
+                      <span className="truncate text-xs flex flex-row items-center">
+                        <LucideStar className="h-3 w-3 mr-1" />
+                        <p className="text-muted-foreground">
+                          4.9 Rating • 47 Rides
+                        </p>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col ">
+                    <h2 className="text-xl font-semibold -mt-2.5">5€</h2>
+                    <p className="text-muted-foreground text-xs">per seat</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>
