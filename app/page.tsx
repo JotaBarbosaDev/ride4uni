@@ -11,7 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {Car, Users, ChartNoAxesCombined, ActivityIcon} from "lucide-react";
+import {Badge} from "@/components/ui/badge";
+import {Car, Users, ChartNoAxesCombined, ActivityIcon, Calendar, Clock} from "lucide-react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {LucideStar} from "lucide-react";
 
@@ -20,7 +21,7 @@ export default function Page() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="p-28">
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
@@ -97,8 +98,8 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min">
-            <Card className="max-w-[600px]">
+          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
+            <Card className="max-w-[600px] mt-3">
               <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex w-full justify-between text-sm font-medium">
                   <div className="flex flex-row gap-2">
@@ -123,24 +124,44 @@ export default function Page() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex">
-                  <div>
-                    <div className="w-3 h-3 rounded-full bg-red-500 mr-2.5 mt-3"></div>
+                <div className="bg-gray-100/65 p-3 rounded-2xl">
+                  <div className="flex">
+                    <div>
+                      <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Pick-up</p>
+                      <h2 className="font-medium text-lg">Viana do Castelo</h2>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Pick-up</p>
-                    <p>Viana do Castelo</p>
+
+                  <div className="w-full h-16 border-l-2 border-black ml-[5px] -mt-5"></div>
+                  <div className="flex -mt-3">
+                    <div>
+                      <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Drop-of</p>
+                      <h2 className="font-medium text-lg">Portela</h2>
+                    </div>
                   </div>
                 </div>
-
-                <div className="w-full h-16 border-l border-black ml-[5px] -mt-[25px]"></div>
-                <div className="flex">
-                  <div>
-                    <div className="w-3 h-3 rounded-full bg-red-500 mr-2.5 mt-3"></div>
+                <div className="w-full flex flex-row justify-between mt-3">
+                  <div className="flex flex-row gap-3">
+                    <div className="flex flex-row">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                      <p className="text-muted-foreground">9 Nov</p>
+                    </div>
+                    <div className="flex flex-row">
+                      <Clock className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                      <p className="text-muted-foreground">14:30</p>
+                    </div>
                   </div>
                   <div>
-                    <p className="text-muted-foreground">Pick-up</p>
-                    <p>Viana do Castelo</p>
+                    <Badge variant="outline">
+                      <Users />
+                      3 Left
+                    </Badge>
                   </div>
                 </div>
               </CardContent>

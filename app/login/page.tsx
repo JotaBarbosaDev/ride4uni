@@ -29,7 +29,7 @@ export default function LoginPage() {
         throw new Error(message || "Login failed");
       }
       router.push("/");
-    } catch (err: any) {
+    } catch (err: any ) {
       setError(err.message ?? "Something went wrong");
     } finally {
       setLoading(false);
