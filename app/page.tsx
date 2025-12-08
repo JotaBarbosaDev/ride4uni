@@ -98,8 +98,9 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
-            <Card className="max-w-[600px] mt-3">
+          <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
+            <div className="flex flex-col items-center">
+            <Card className="w-full mt-3">
               <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
                 <CardTitle className="flex w-full justify-between text-sm font-medium">
                   <div className="flex flex-row gap-2">
@@ -159,13 +160,81 @@ export default function Page() {
                   </div>
                   <div>
                     <Badge variant="outline">
-                      <Users />
-                      3 Left
+                      <Users />3 Left
                     </Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            <Card className="w-full mt-3">
+              <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
+                <CardTitle className="flex w-full justify-between text-sm font-medium">
+                  <div className="flex flex-row gap-2">
+                    <Avatar className="h-8 w-8 rounded-lg">
+                      <AvatarImage src="/" alt="edw" />
+                      <AvatarFallback className="rounded-lg">U</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">User</span>
+                      <span className="truncate text-xs flex flex-row items-center">
+                        <LucideStar className="h-3 w-3 mr-1" />
+                        <p className="text-muted-foreground">
+                          4.9 Rating • 47 Rides
+                        </p>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col ">
+                    <h2 className="text-xl font-semibold -mt-2.5">5€</h2>
+                    <p className="text-muted-foreground text-xs">per seat</p>
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100/65 p-3 rounded-2xl">
+                  <div className="flex">
+                    <div>
+                      <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Pick-up</p>
+                      <h2 className="font-medium text-lg">Viana do Castelo</h2>
+                    </div>
+                  </div>
+
+                  <div className="w-full h-16 border-l-2 border-black ml-[5px] -mt-5"></div>
+                  <div className="flex -mt-3">
+                    <div>
+                      <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-sm">Drop-of</p>
+                      <h2 className="font-medium text-lg">Portela</h2>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-full flex flex-row justify-between mt-3">
+                  <div className="flex flex-row gap-3">
+                    <div className="flex flex-row">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                      <p className="text-muted-foreground">9 Nov</p>
+                    </div>
+                    <div className="flex flex-row">
+                      <Clock className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                      <p className="text-muted-foreground">14:30</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Badge variant="outline">
+                      <Users />3 Left
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            </div>
           </div>
         </div>
       </SidebarInset>

@@ -4,8 +4,10 @@ import * as React from "react"
 import {
   LucideCar,
   LucideHome,
+  LucideMessageSquare,
   LucidePlusCircle,
   LucideStar,
+  LucideUser,
   PersonStanding,
 } from "lucide-react"
 
@@ -132,13 +134,18 @@ export const data = {
     },
     {
       name: "Search Rides",
-      url: "#",
+      url: "/search-rides",
       icon: LucidePlusCircle,
     },
     {
       name: "Post Rides",
-      url: "#",
+      url: "/post-rides",
       icon: LucideCar,
+    },
+    {
+      name: "My Rides",
+      url: "/history-rides",
+      icon: LucideStar,
     },
   ],
 }
