@@ -2,6 +2,7 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import {login} from "../../api/authService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,23 +19,20 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, password}),
-        credentials: "include"
-      });
-      if (!res.ok) {
-        const {message} = await res.json().catch(() => ({message: "Login failed"}));
-        throw new Error(message || "Login failed");
-      }
+      const res = await login(email, password); 
+      if (res.status !== 200) throw new Error("Login failed");
+
       router.push("/");
-    } catch (err: any ) {
-      setError(err.message ?? "Something went wrong");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message || 
+        err?.message ||
+        "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
-    }
   }
+}
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-muted/50 p-6">
