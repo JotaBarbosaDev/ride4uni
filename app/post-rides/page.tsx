@@ -1,12 +1,21 @@
+'use client';
+
+import {useState} from "react";
+import {format} from "date-fns";
+import {Calendar as CalendarIcon, Clock, MapPin, Users, DollarSign} from "lucide-react";
+
 import {AppSidebar} from "@/components/app-sidebar";
 import {Button} from "@/components/ui/button";
+import {Calendar} from "@/components/ui/calendar";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
 import {Separator} from "@/components/ui/separator";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
-import {Calendar, Clock, MapPin, Users, DollarSign} from "lucide-react";
 
 export default function PostRidesPage() {
+  const [date, setDate] = useState<Date>();
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -70,14 +79,29 @@ export default function PostRidesPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
+                    <CalendarIcon className="h-4 w-4" />
                     Date
                   </p>
                   <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-3">
-                    <Input
-                      placeholder="dd/mm/aaaa"
-                      className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
-                    />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          data-empty={!date}
+                          className="w-full justify-start border-0 bg-transparent px-0 text-left font-normal shadow-none hover:bg-transparent focus-visible:ring-0 data-[empty=true]:text-muted-foreground"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {date ? format(date, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setDate}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -87,8 +111,9 @@ export default function PostRidesPage() {
                   </p>
                   <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-3">
                     <Input
-                      placeholder="--:--"
-                      className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
+                      type="time"
+                      step={60}
+                      className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0 appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                     />
                   </div>
                 </div>
@@ -121,7 +146,7 @@ export default function PostRidesPage() {
                 </div>
               </div>
 
-              <Button className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button onClick={PostRide} className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90">
                 Post Ride
               </Button>
             </CardContent>
@@ -130,4 +155,8 @@ export default function PostRidesPage() {
       </SidebarInset>
     </SidebarProvider>
   );
+}
+
+export function PostRide() {
+  alert("Ride posted successfully!");
 }
