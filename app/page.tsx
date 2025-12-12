@@ -16,6 +16,15 @@ import {Car, Users, ChartNoAxesCombined, ActivityIcon, Calendar, Clock} from "lu
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {LucideStar} from "lucide-react";
 
+type Ride = {
+  id: number;
+  origin: string;
+  destination: string;
+  dateTime: string;  
+  seatCount: number; 
+  availableSeats: number;
+  driveId: number;
+};
 
 export default function Page() {
   return (

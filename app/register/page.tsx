@@ -2,6 +2,7 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import {createUser} from "../../api/userService";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,19 +20,14 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:3000/api/users", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({email, password, name, phone}),
-        credentials: "include"
-      });
-      if (!res.ok) {
-        const {message} = await res.json().catch(() => ({message: "Registration failed"}));
-        throw new Error(message || "Registration failed");
+      const res = await createUser({email, password, name, phone});
+      if (res.status !== 201 && res.status !== 200) {
+        throw new Error("Registration failed");
       }
       router.push("/login");
     } catch (err: any) {
-      setError(err.message ?? "Something went wrong");
+      const message = err?.response?.data?.message || err?.message || "Something went wrong";
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@ import {useEffect, useState} from "react";
 import {logout, getCurrentUser} from "@/api/authService";
 import {useRouter} from "next/navigation";
 import {getUserByID} from "@/api/userService";
+import { setCookie,destroyCookie } from "nookies"; 
 import {
   BadgeCheck,
   Bell,
@@ -58,6 +59,13 @@ export function NavUser({
     const loadRating = async () => {
       try {
         const {data: currentUserId} = await getCurrentUser();
+        if (currentUserId) {
+          setCookie(null, "currentUserId", String(currentUserId), {
+            path: "/",
+            maxAge: 60 * 60 * 24, 
+            sameSite: "lax",
+          });
+        }
         const {data: fetchedUser} = await getUserByID(currentUserId);
         const {data} = await getDriverRating(currentUserId);
         setUserInfo(fetchedUser);
@@ -70,7 +78,12 @@ export function NavUser({
   }, []);
 
   const handleLogout = async () => {
-    await logout();           
+    try {
+        await logout(); 
+      } finally {
+        destroyCookie(null, "currentUserId", { path: "/" });
+      }
+    
     router.push("/login");    
   };
 
