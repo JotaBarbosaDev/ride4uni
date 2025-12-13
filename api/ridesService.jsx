@@ -8,6 +8,9 @@ function getAllRides() {
   return api.get("/rides");
 }
 
+function getRidesDashboard() {
+  return api.get("/rides/dashboard/all");
+} 
 function getRidesByDriver(driverId) {
   return api.get(`/rides/driver/${driverId}`);
 }
@@ -31,4 +34,5 @@ export {
   getRideByRideID,
   deleteRide,
   updateRide,
+  getRidesDashboard,
 };

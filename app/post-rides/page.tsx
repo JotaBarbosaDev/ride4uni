@@ -46,7 +46,6 @@ export default function PostRidesPage() {
         price,
 
       });
-      alert("Ride posted successfully!");
     } catch (error) {
       console.error("Failed to post ride", error);
       alert("Failed to post ride");
@@ -230,8 +229,12 @@ export async function PostRide(ride: RideFormValues) {
     dateTime: toDateTime(ride.date, ride.time),
     seatCount: Number(ride.seats) || 0,
     availableSeats: Number(ride.seats) || 0,
-    driverId: currentUserId,
+    driverId: Number(currentUserId),
   };
 
+try {
   await createRide(payload);
+} catch (error: any) {
+  console.error(error?.response?.data || error);
+}
 }
