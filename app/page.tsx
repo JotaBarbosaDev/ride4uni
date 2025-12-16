@@ -46,7 +46,7 @@ const averageRating = (ratings: Array<{ rating: number }>) =>
 export const revalidate = 0;
 
 export default async function Page() {
- const rides = (await getRidesDashboard()).data; 
+  const rides: Ride[] = (await getRidesDashboard()).data;
 
   return (
     <SidebarProvider>
