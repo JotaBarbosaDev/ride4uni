@@ -1,4 +1,4 @@
-import {api} from "./api.jsx";
+import {api} from "./api.js";
 
 function createRating(payload) {
   return api.post("/ratings", payload);

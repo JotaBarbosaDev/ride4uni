@@ -1,4 +1,4 @@
-import {api} from "./api.jsx";
+import {api} from "./api.js";
 
 function createUser(payload) {
   return api.post("/users", payload);
@@ -24,6 +24,9 @@ function updateUser(id, payload) {
   return api.put(`/users/id/${id}`, payload);
 }
 
+function getTotalUsers() {
+  return api.get(`/users/total/count`);
+}
 export {
   createUser,
   getUsers,
@@ -31,4 +34,5 @@ export {
   getUserByID,
   deleteUser,
   updateUser,
+  getTotalUsers,
 };

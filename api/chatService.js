@@ -1,4 +1,4 @@
-import {api} from "./api.jsx";
+import {api} from "./api.js";
 
 function createChat(payload) {
   return api.post("/chats", payload);

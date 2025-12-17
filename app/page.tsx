@@ -12,10 +12,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Car, Users, ChartNoAxesCombined, ActivityIcon, Calendar, Clock} from "lucide-react";
+import {Car, Users, ChartNoAxesCombined, Calendar, Clock} from "lucide-react";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {LucideStar} from "lucide-react";
 import {getRidesDashboard} from "@/api/ridesService";
+import {getTotalUsers} from "@/api/userService";
+import {ActiveNowCard} from "@/components/active-now-card";
 
 
 type Ride = {
@@ -47,6 +49,8 @@ export const revalidate = 0;
 
 export default async function Page() {
   const rides: Ride[] = (await getRidesDashboard()).data;
+  const totalusers = (await getTotalUsers()).data;
+  const activeRidesCount = rides.length;
 
   return (
     <SidebarProvider>
@@ -79,7 +83,7 @@ export default async function Page() {
                   <Car className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">234</div>
+                  <div className="text-2xl font-bold">{activeRidesCount}</div>
                   <p className="text-xs text-muted-foreground">
                     +20.1% from last month
                   </p>
@@ -93,7 +97,7 @@ export default async function Page() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">1.2k</div>
+                  <div className="text-2xl font-bold">{totalusers.totalUsers}</div>
                   <p className="text-xs text-muted-foreground">
                     +180.1% from last month
                   </p>
@@ -111,20 +115,7 @@ export default async function Page() {
                   </p>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Active Now
-                  </CardTitle>
-                  <ActivityIcon className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+573</div>
-                  <p className="text-xs text-muted-foreground">
-                    +201 since last hour
-                  </p>
-                </CardContent>
-              </Card>
+              <ActiveNowCard />
             </div>
           </div>
 

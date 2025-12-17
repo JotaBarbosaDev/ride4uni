@@ -1,4 +1,4 @@
-import {api} from "./api.jsx";
+import {api} from "./api.js";
 
 function createMessage(payload) {
   return api.post("/messages", payload);
