@@ -4,10 +4,10 @@ import * as React from "react"
 import {
   LucideCar,
   LucideHome,
-  LucideMessageSquare,
   LucidePlusCircle,
   LucideStar,
   LucideUser,
+  LucideMessageSquare,
   PersonStanding,
 } from "lucide-react"
 
@@ -26,10 +26,7 @@ import {
 export const data = {
   user: {
     name: "User",
-    rating:
-    { LucideStar: LucideStar,
-      ratingNumber: 4.9
-    },
+    rating: {LucideStar: LucideStar, ratingNumber: 4.9},
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
@@ -37,7 +34,7 @@ export const data = {
       name: "Ride4Uni",
       logo: PersonStanding,
       plan: "User",
-    }
+    },
   ],
   // navMain: [
   //   {
@@ -147,8 +144,13 @@ export const data = {
       url: "/history-rides",
       icon: LucideStar,
     },
+    {
+      name: "Messages",
+      url: "/messages",
+      icon: LucideMessageSquare,
+    },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (

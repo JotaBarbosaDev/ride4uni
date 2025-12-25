@@ -1,3 +1,6 @@
+"use client";
+
+import {useRouter} from "next/navigation";
 import {AppSidebar} from "@/components/app-sidebar";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -10,6 +13,8 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {LucideStar} from "lucide-react";
 
 export default function HistoryRidesPage() {
+  const router = useRouter();
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -77,7 +82,11 @@ export default function HistoryRidesPage() {
                       </div>
                       <Sheet>
                         <SheetTrigger asChild>
-                          <Button variant="outline" className="h-9">
+                          <Button
+                            variant="outline"
+                            className="h-9"
+                            onClick={() => router.push("/messages/1")}
+                          >
                             Message
                           </Button>
                         </SheetTrigger>
