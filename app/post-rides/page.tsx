@@ -3,7 +3,6 @@
 import {FormEvent, useState} from "react";
 import {format} from "date-fns";
 import {Calendar as CalendarIcon, Clock, MapPin, Users, DollarSign} from "lucide-react";
-import { parseCookies } from "nookies";
 
 import {AppSidebar} from "@/components/app-sidebar";
 import {Button} from "@/components/ui/button";
@@ -33,10 +32,16 @@ export default function PostRidesPage() {
   const [time, setTime] = useState("");
   const [seats, setSeats] = useState("");
   const [price, setPrice] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!date || !time || !pickupLocation || !dropoffLocation || !seats) {
+      alert("Preenche todos os campos obrigatórios");
+      return;
+    }
     try {
+      setSubmitting(true);
       await PostRide({
         pickupLocation,
         dropoffLocation,
@@ -46,9 +51,18 @@ export default function PostRidesPage() {
         price,
 
       });
+      setPickupLocation("");
+      setDropoffLocation("");
+      setDate(undefined);
+      setTime("");
+      setSeats("");
+      setPrice("");
+      alert("Boleia publicada");
     } catch (error) {
       console.error("Failed to post ride", error);
       alert("Failed to post ride");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -199,8 +213,8 @@ export default function PostRidesPage() {
                   </div>
                 </div>
 
-                <Button type="submit" className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                  Post Ride
+                <Button type="submit" className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={submitting}>
+                  {submitting ? "A publicar..." : "Post Ride"}
                 </Button>
               </form>
             </CardContent>
@@ -220,8 +234,8 @@ export async function PostRide(ride: RideFormValues) {
     return combined.toISOString();
   };
 
-  const cookies = parseCookies();
-  const currentUserId = cookies.currentUserId;
+  const currentUser = await getCurrentUser();
+  const currentUserId = currentUser.data?.id ?? currentUser.data;
 
   const payload = {
     origin: ride.pickupLocation,

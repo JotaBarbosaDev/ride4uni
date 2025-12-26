@@ -1,7 +1,8 @@
 "use client";
 
-import {useMemo} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {useParams, useRouter} from "next/navigation";
+import {Clock, ArrowLeft, Send} from "lucide-react";
 import {AppSidebar} from "@/components/app-sidebar";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -10,68 +11,145 @@ import {Input} from "@/components/ui/input";
 import {Separator} from "@/components/ui/separator";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {Clock, ArrowLeft} from "lucide-react";
+import {getMessagesByChatId, createMessage} from "@/api/messageService";
+import {getUserChats} from "@/api/chatService";
+import {getUserByID} from "@/api/userService";
+import {getCurrentUser} from "@/api/authService";
 
 type ChatMessage = {
-  id: number | string;
-  sender: string;
-  isMine: boolean;
+  id: string;
+  senderId: string;
+  receiverId?: string;
   content: string;
-  createdAt: string;
+  timestamp: string;
 };
 
 type ChatDetail = {
-  id: number | string;
-  participant: string;
-  participantAvatar?: string;
-  rideLabel?: string;
+  id: string;
+  participants: Array<{ id: string; name: string }>;
   messages: ChatMessage[];
 };
 
-const mockChats: Record<string, ChatDetail> = {
-  "1": {
-    id: 1,
-    participant: "Joana",
-    participantAvatar: "/avatars/shadcn.jpg",
-    rideLabel: "Porto -> Aveiro",
-    messages: [
-      {id: 1, sender: "Joana", isMine: false, content: "Confirmamos às 14:20?", createdAt: new Date().toISOString()},
-      {id: 2, sender: "Tu", isMine: true, content: "Sim, encontro no ponto habitual.", createdAt: new Date().toISOString()},
-    ],
-  },
-  "2": {
-    id: 2,
-    participant: "Carlos",
-    participantAvatar: undefined,
-    rideLabel: "Braga -> Guimaraes",
-    messages: [
-      {id: 1, sender: "Carlos", isMine: false, content: "Enviei o ponto de encontro atualizado.", createdAt: new Date().toISOString()},
-      {id: 2, sender: "Tu", isMine: true, content: "Visto, até já!", createdAt: new Date().toISOString()},
-    ],
-  },
-  "3": {
-    id: 3,
-    participant: "Sofia",
-    participantAvatar: undefined,
-    rideLabel: "Viana -> Porto",
-    messages: [
-      {id: 1, sender: "Sofia", isMine: false, content: "Podes confirmar a minha solicitação?", createdAt: new Date().toISOString()},
-      {id: 2, sender: "Tu", isMine: true, content: "Confirmado!", createdAt: new Date().toISOString()},
-    ],
-  },
+type ChatApi = {
+  id?: string;
+  _id?: string;
+  participants?: string[];
+};
+
+type MessageApi = {
+  id?: string;
+  _id?: string;
+  senderId?: string;
+  sender?: string;
+  from?: string;
+  receiverId?: string;
+  content?: string;
+  timestamp?: string;
+  createdAt?: string;
 };
 
 export default function MessageThreadPage() {
   const params = useParams();
   const router = useRouter();
   const chatId = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const [chat, setChat] = useState<ChatDetail | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [me, setMe] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  const chat = useMemo(() => mockChats[chatId ?? ""] ?? mockChats["1"], [chatId]);
+  useEffect(() => {
+    const load = async () => {
+      if (!chatId) return;
+      try {
+        const meRes = await getCurrentUser();
+        const meId = String(meRes.data?.id ?? meRes.data);
+        setMe(meId);
+
+        const chatsRes = await getUserChats();
+        const target = (chatsRes.data as ChatApi[] ?? []).find((c) => String(c.id ?? c._id) === String(chatId));
+        const participantsIds: string[] = target?.participants ?? [];
+        const participants = await Promise.all(
+          participantsIds.map(async (pid) => {
+            try {
+              const u = await getUserByID(pid);
+              return {id: String(pid), name: u.data?.name ?? String(pid)};
+            } catch (_err) {
+              return {id: String(pid), name: String(pid), _err};
+            }
+          })
+        );
+
+        const messagesRes = await getMessagesByChatId(chatId);
+        const messages = (messagesRes.data as MessageApi[] ?? []).map((m) => ({
+          id: String(m.id ?? m._id ?? crypto.randomUUID()),
+          senderId: String(m.senderId ?? m.sender ?? m.from ?? ""),
+          receiverId: m.receiverId ? String(m.receiverId) : undefined,
+          content: m.content ?? "",
+          timestamp: m.timestamp ?? m.createdAt ?? new Date().toISOString(),
+        }));
+
+        setChat({
+          id: String(chatId),
+          participants,
+          messages,
+        });
+      } catch (error) {
+        console.error("Failed to load chat", error);
+      }
+    };
+
+    load();
+  }, [chatId]);
+
+  useEffect(() => {
+    if (!listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [chat?.messages.length]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString("pt-PT", {hour: "2-digit", minute: "2-digit"});
   };
+
+  const otherParticipant = useMemo(() => {
+    if (!chat || !me) return null;
+    return chat.participants.find((p) => p.id !== me) ?? null;
+  }, [chat, me]);
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !chat || !me) return;
+    const receiverId = otherParticipant?.id;
+    setSending(true);
+    try {
+      await createMessage({
+        chatId: chat.id,
+        senderId: me,
+        receiverId,
+        content: newMessage.trim(),
+      });
+
+      const now = new Date().toISOString();
+      setChat((prev) => prev ? {
+        ...prev,
+        messages: [...prev.messages, {
+          id: crypto.randomUUID(),
+          senderId: me,
+          receiverId,
+          content: newMessage.trim(),
+          timestamp: now,
+        }],
+      } : prev);
+      setNewMessage("");
+    } catch (error) {
+      console.error("Failed to send message", error);
+      alert("Não foi possível enviar a mensagem");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const participantName = otherParticipant?.name ?? "Chat";
 
   return (
     <SidebarProvider>
@@ -90,56 +168,74 @@ export default function MessageThreadPage() {
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")}> <ArrowLeft className="h-4 w-4" /> </Button>
+              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Voltar">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
               <div className="flex items-center gap-2">
                 <Avatar className="h-10 w-10 rounded-lg">
-                  <AvatarImage src={chat.participantAvatar ?? "/avatars/shadcn.jpg"} alt={chat.participant} />
-                  <AvatarFallback className="rounded-lg">{chat.participant.slice(0, 1).toUpperCase()}</AvatarFallback>
+                  <AvatarImage src="/avatars/shadcn.jpg" alt={participantName} />
+                  <AvatarFallback className="rounded-lg">{participantName.slice(0, 1).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="leading-tight">
-                  <p className="font-semibold">{chat.participant}</p>
-                  {chat.rideLabel ? (
-                    <p className="text-xs text-muted-foreground">{chat.rideLabel}</p>
-                  ) : null}
+                  <p className="font-semibold">{participantName}</p>
                 </div>
               </div>
             </div>
-            <Badge variant="outline">Chat #{chat.id}</Badge>
+            <Badge variant="outline">Chat #{chatId}</Badge>
           </div>
 
           <Card className="w-full max-w-5xl mx-auto bg-muted/50 rounded-xl">
             <CardContent className="p-4 space-y-4">
-              <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
-                {chat.messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.isMine ? "justify-end" : "justify-start"}`}
-                  >
-                    <div className={`flex max-w-xl gap-2 ${message.isMine ? "flex-row-reverse" : "flex-row"}`}>
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarFallback className="rounded-lg">{message.sender.slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={`rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                          message.isMine ? "bg-primary text-primary-foreground" : "bg-white"
-                        }`}
-                      >
-                        <p>{message.content}</p>
-                        <p className={`text-[10px] mt-1 ${message.isMine ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          {formatTime(message.createdAt)}
-                        </p>
+              <div ref={listRef} className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+                {(chat?.messages ?? []).map((message) => {
+                  const isMine = me && message.senderId === me;
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                    >
+                      <div className={`flex max-w-xl gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                        <Avatar className="h-8 w-8 rounded-lg">
+                          <AvatarFallback className="rounded-lg">
+                            {(isMine ? "Tu" : otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={`rounded-2xl px-3 py-2 text-sm shadow-sm ${
+                            isMine ? "bg-primary text-primary-foreground" : "bg-white"
+                          }`}
+                        >
+                          <p>{message.content}</p>
+                          <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                            <Clock className="h-3 w-3 inline mr-1" />
+                            {formatTime(message.timestamp)}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <Separator />
 
               <div className="flex items-center gap-2">
-                <Input placeholder="Escreve a tua mensagem..." disabled className="flex-1" />
-                <Button disabled>Enviar</Button>
+                <Input
+                  placeholder="Escreve a tua mensagem..."
+                  className="flex-1"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  disabled={!me || sending}
+                />
+                <Button onClick={handleSend} disabled={!newMessage.trim() || sending || !me}>
+                  <Send className="h-4 w-4 mr-1" /> Enviar
+                </Button>
               </div>
             </CardContent>
           </Card>

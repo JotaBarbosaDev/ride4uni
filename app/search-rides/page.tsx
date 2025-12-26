@@ -1,3 +1,6 @@
+"use client";
+
+import {useEffect, useMemo, useState} from "react";
 import {AppSidebar} from "@/components/app-sidebar";
 import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
@@ -7,8 +10,163 @@ import {Separator} from "@/components/ui/separator";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Calendar, Clock, LucideStar, MapPin, Users} from "lucide-react";
+import {getAllRides} from "@/api/ridesService";
+import {createBooking} from "@/api/bookingService";
+import {getCurrentUser} from "@/api/authService";
+
+type Ride = {
+  id: number;
+  origin: string;
+  destination: string;
+  dateTime: string;
+  seatCount: number;
+  availableSeats: number;
+  driverId: number;
+  driver?: { name?: string; ratingsGot?: Array<{ rating: number }> };
+};
 
 export default function SearchRidesPage() {
+  const [rides, setRides] = useState<Ride[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const [filterPassengers, setFilterPassengers] = useState("1");
+  const [bookingRideId, setBookingRideId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [ridesRes, userRes] = await Promise.all([getAllRides(), getCurrentUser().catch(() => null)]);
+        setRides(ridesRes.data ?? []);
+        const me = userRes?.data?.id ?? userRes?.data;
+        setCurrentUserId(me ? Number(me) : null);
+      } catch (error) {
+        console.error("Failed to load rides", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
+
+  const filtered = useMemo(() => {
+    const from = filterFrom.trim().toLowerCase();
+    const to = filterTo.trim().toLowerCase();
+    const passengers = Number(filterPassengers) || 1;
+    return rides.filter((ride) => {
+      const matchesFrom = from ? ride.origin.toLowerCase().includes(from) : true;
+      const matchesTo = to ? ride.destination.toLowerCase().includes(to) : true;
+      const matchesSeats = ride.availableSeats >= passengers;
+      return matchesFrom && matchesTo && matchesSeats;
+    });
+  }, [rides, filterFrom, filterTo, filterPassengers]);
+
+  const averageRating = (ratings?: Array<{ rating: number }>) =>
+    ratings?.length ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1) : "0";
+
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
+  const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+
+  const handleBook = async (rideId: number) => {
+    if (!currentUserId) {
+      alert("Precisas de iniciar sessão para reservar.");
+      return;
+    }
+    setBookingRideId(rideId);
+    try {
+      await createBooking({rideId, passengerId: currentUserId});
+      alert("Reserva criada com sucesso");
+      setRides((prev) => prev.map((r) => r.id === rideId ? {...r, availableSeats: Math.max(0, r.availableSeats - 1)} : r));
+    } catch (error: any) {
+      const msg = error?.response?.data?.message ?? "Não foi possível reservar";
+      alert(msg);
+    } finally {
+      setBookingRideId(null);
+    }
+  };
+
+  const renderRide = (ride: Ride) => {
+    const driverName = ride.driver?.name ?? `Condutor #${ride.driverId}`;
+    const rating = averageRating(ride.driver?.ratingsGot);
+    return (
+      <Card key={ride.id} className="w-full mt-3">
+        <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
+          <CardTitle className="flex w-full justify-between text-sm font-medium">
+            <div className="flex flex-row gap-2">
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage src="/avatars/shadcn.jpg" alt={driverName} />
+                <AvatarFallback className="rounded-lg">{driverName.slice(0, 1).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{driverName}</span>
+                <span className="truncate text-xs flex flex-row items-center">
+                  <LucideStar className="h-3 w-3 mr-1" />
+                  <p className="text-muted-foreground">
+                    {rating} Rating
+                  </p>
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <p className="text-muted-foreground text-xs">Seat count</p>
+              <h2 className="text-xl font-semibold -mt-1">{ride.availableSeats}/{ride.seatCount}</h2>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-gray-100/65 p-3 rounded-2xl">
+            <div className="flex">
+              <div>
+                <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Pick-up</p>
+                <h2 className="font-medium text-lg">{ride.origin}</h2>
+              </div>
+            </div>
+
+            <div className="w-full h-16 border-l-2 border-black ml-[5px] -mt-5"></div>
+            <div className="flex -mt-3">
+              <div>
+                <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Drop-of</p>
+                <h2 className="font-medium text-lg">{ride.destination}</h2>
+              </div>
+            </div>
+          </div>
+          <div className="w-full flex flex-row justify-between mt-3">
+            <div className="flex flex-row gap-3">
+              <div className="flex flex-row">
+                <Calendar className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                <p className="text-muted-foreground">{formatDate(ride.dateTime)}</p>
+              </div>
+              <div className="flex flex-row">
+                <Clock className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
+                <p className="text-muted-foreground">{formatTime(ride.dateTime)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">
+                <Users /> {ride.availableSeats} Left
+              </Badge>
+              <Button
+                size="sm"
+                onClick={() => handleBook(ride.id)}
+                disabled={bookingRideId === ride.id || ride.availableSeats <= 0}
+              >
+                {bookingRideId === ride.id ? "A reservar..." : "Reservar"}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -29,7 +187,7 @@ export default function SearchRidesPage() {
               Search Rides
             </h1>
             <p className="text-muted-foreground">
-              Explora boleias com um visual monocromático, consistente com a página principal.
+              Explora boleias reais da API.
             </p>
           </div>
 
@@ -37,7 +195,7 @@ export default function SearchRidesPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-semibold">Find Your Ride</CardTitle>
               <CardDescription>
-                Preenche os detalhes e vê os resultados logo abaixo.
+                Filtra por origem, destino e lugares.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -49,6 +207,8 @@ export default function SearchRidesPage() {
                     <Input
                       placeholder="Pick-up location"
                       className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
+                      value={filterFrom}
+                      onChange={(e) => setFilterFrom(e.target.value)}
                     />
                   </div>
                 </div>
@@ -59,32 +219,14 @@ export default function SearchRidesPage() {
                     <Input
                       placeholder="Drop-off location"
                       className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
+                      value={filterTo}
+                      onChange={(e) => setFilterTo(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Date</p>
-                  <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="dd/mm/aaaa"
-                      className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Time</p>
-                  <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="--:--"
-                      className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
-                    />
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Passengers</p>
                   <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-2">
@@ -94,156 +236,32 @@ export default function SearchRidesPage() {
                       min={1}
                       placeholder="1"
                       className="border-0 bg-transparent px-0 shadow-none focus-visible:border-0 focus-visible:ring-0"
+                      value={filterPassengers}
+                      onChange={(e) => setFilterPassengers(e.target.value)}
                     />
                   </div>
                 </div>
               </div>
 
-              <Button className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Search Rides
-              </Button>
+              <p className="text-sm text-muted-foreground">
+                {filtered.length} boleias encontradas
+              </p>
             </CardContent>
           </Card>
 
           <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-lg font-semibold">Available Rides</h2>
-              <p className="text-sm text-muted-foreground">Resultados de exemplo</p>
+              <p className="text-sm text-muted-foreground">Resultados em tempo real</p>
             </div>
             <div className="flex flex-col items-center">
-              <Card className="w-full mt-3">
-                <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="flex w-full justify-between text-sm font-medium">
-                    <div className="flex flex-row gap-2">
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src="/" alt="user" />
-                        <AvatarFallback className="rounded-lg">U</AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-medium">User</span>
-                        <span className="truncate text-xs flex flex-row items-center">
-                          <LucideStar className="h-3 w-3 mr-1" />
-                          <p className="text-muted-foreground">
-                            4.9 Rating • 47 Rides
-                          </p>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <h2 className="text-xl font-semibold -mt-2.5">5€</h2>
-                      <p className="text-muted-foreground text-xs">per seat</p>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gray-100/65 p-3 rounded-2xl">
-                    <div className="flex">
-                      <div>
-                        <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-sm">Pick-up</p>
-                        <h2 className="font-medium text-lg">Viana do Castelo</h2>
-                      </div>
-                    </div>
-
-                    <div className="w-full h-16 border-l-2 border-black ml-[5px] -mt-5"></div>
-                    <div className="flex -mt-3">
-                      <div>
-                        <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-sm">Drop-of</p>
-                        <h2 className="font-medium text-lg">Portela</h2>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full flex flex-row justify-between mt-3">
-                    <div className="flex flex-row gap-3">
-                      <div className="flex flex-row">
-                        <Calendar className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
-                        <p className="text-muted-foreground">9 Nov</p>
-                      </div>
-                      <div className="flex flex-row">
-                        <Clock className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
-                        <p className="text-muted-foreground">14:30</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Badge variant="outline">
-                        <Users />3 Left
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="w-full mt-3">
-                <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="flex w-full justify-between text-sm font-medium">
-                    <div className="flex flex-row gap-2">
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src="/" alt="user" />
-                        <AvatarFallback className="rounded-lg">U</AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-medium">User</span>
-                        <span className="truncate text-xs flex flex-row items-center">
-                          <LucideStar className="h-3 w-3 mr-1" />
-                          <p className="text-muted-foreground">
-                            5.0 Rating • 89 Rides
-                          </p>
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col">
-                      <h2 className="text-xl font-semibold -mt-2.5">15€</h2>
-                      <p className="text-muted-foreground text-xs">per seat</p>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-gray-100/65 p-3 rounded-2xl">
-                    <div className="flex">
-                      <div>
-                        <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-sm">Pick-up</p>
-                        <h2 className="font-medium text-lg">Braga</h2>
-                      </div>
-                    </div>
-
-                    <div className="w-full h-16 border-l-2 border-black ml-[5px] -mt-5"></div>
-                    <div className="flex -mt-3">
-                      <div>
-                        <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-sm">Drop-of</p>
-                        <h2 className="font-medium text-lg">Porto</h2>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="w-full flex flex-row justify-between mt-3">
-                    <div className="flex flex-row gap-3">
-                      <div className="flex flex-row">
-                        <Calendar className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
-                        <p className="text-muted-foreground">10 Nov</p>
-                      </div>
-                      <div className="flex flex-row">
-                        <Clock className="h-4 w-4 text-muted-foreground mt-1 mr-0.5" />
-                        <p className="text-muted-foreground">06:00</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Badge variant="outline">
-                        <Users />2 Left
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {loading ? (
+                <p className="text-sm text-muted-foreground mt-4">A carregar...</p>
+              ) : filtered.length === 0 ? (
+                <p className="text-sm text-muted-foreground mt-4">Sem resultados para estes filtros.</p>
+              ) : (
+                filtered.map(renderRide)
+              )}
             </div>
           </div>
         </div>

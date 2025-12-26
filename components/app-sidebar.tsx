@@ -6,7 +6,6 @@ import {
   LucideHome,
   LucidePlusCircle,
   LucideStar,
-  LucideUser,
   LucideMessageSquare,
   PersonStanding,
 } from "lucide-react"
