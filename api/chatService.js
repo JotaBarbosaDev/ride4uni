@@ -8,8 +8,12 @@ function getChatByParticipants(userA, userB) {
   return api.get(`/chats/history/${userA}/${userB}`);
 }
 
-function getUserChats() {
-  return api.get("/chats");
+function getUserChats(id) {
+  return api.get(`/chats/${id}`);
 }
 
-export {createChat, getChatByParticipants, getUserChats};
+function getUsers() {
+  return api.get(`/total/count`);
+}
+
+export {createChat, getChatByParticipants, getUserChats, getUsers};

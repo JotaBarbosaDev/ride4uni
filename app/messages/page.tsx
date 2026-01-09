@@ -40,10 +40,12 @@ export default function MessagesPage() {
     const load = async () => {
       try {
         const userRes = await getCurrentUser();
-        const me = userRes.data?.id ?? userRes.data;
-        setCurrentUserId(String(me));
-
-        const chatsRes = await getUserChats();
+        console.log("getCurrentUser response:", userRes);
+        const me = userRes.data?.id ?? userRes.data?.userId ?? userRes.data;
+        console.log("Current user ID extracted:", me);
+        setCurrentUserId(String(me))
+        const chatsRes = await getUserChats(me);
+        console.log("getUserChats response:", chatsRes);
         const rawChats: ChatApi[] = chatsRes.data ?? [];
 
         const resolved = await Promise.all(
