@@ -248,7 +248,14 @@ export async function PostRide(ride: RideFormValues) {
 
 try {
   await createRide(payload);
-} catch (error: any) {
-  console.error(error?.response?.data || error);
+} catch (error) {
+  if (error && typeof error === "object") {
+    const response = (error as {response?: {data?: unknown}}).response;
+    if (response?.data) {
+      console.error(response.data);
+      return;
+    }
+  }
+  console.error(error);
 }
 }

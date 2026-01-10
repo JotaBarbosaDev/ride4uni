@@ -69,6 +69,15 @@ export default function SearchRidesPage() {
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
 
+  const getErrorMessage = (err: unknown) => {
+    if (err && typeof err === "object") {
+      const response = (err as {response?: {data?: {message?: string}}}).response;
+      if (response?.data?.message) return response.data.message;
+    }
+    if (err instanceof Error) return err.message;
+    return "Não foi possível reservar";
+  };
+
   const handleBook = async (rideId: number) => {
     if (!currentUserId) {
       alert("Precisas de iniciar sessão para reservar.");
@@ -79,9 +88,8 @@ export default function SearchRidesPage() {
       await createBooking({rideId, passengerId: currentUserId});
       alert("Reserva criada com sucesso");
       setRides((prev) => prev.map((r) => r.id === rideId ? {...r, availableSeats: Math.max(0, r.availableSeats - 1)} : r));
-    } catch (error: any) {
-      const msg = error?.response?.data?.message ?? "Não foi possível reservar";
-      alert(msg);
+    } catch (error) {
+      alert(getErrorMessage(error));
     } finally {
       setBookingRideId(null);
     }
