@@ -3,7 +3,7 @@ import axios from 'axios';
 axios.defaults.withCredentials = true;
 
 export const api = axios.create({
-  baseURL: "https://localhost:3000/api",
+  baseURL: "https://sir-api.maruqes.com/api",
 });
 
 const redirectToLogin = async () => {
