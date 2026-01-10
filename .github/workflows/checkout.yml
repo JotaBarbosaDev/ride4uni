@@ -1,0 +1,35 @@
+name: Clone repo
+
+on:
+    workflow_dispatch:
+
+jobs:
+    clone:
+        runs-on: [self-hosted, linux, x64]
+
+        steps:
+            - name: checkout do repo privado
+              uses: actions/checkout@v4
+
+            - name: fix home
+              run: |
+                  echo "HOME=/home/sir" >> $GITHUB_ENV
+                  echo "PM2_HOME=/home/sir/.pm2" >> $GITHUB_ENV
+
+            - name: copiar project
+              run: |
+                  pm2 stop sir-app-front || true
+                  pm2 delete sir-app-front || true
+                  rsync -a --delete ./ "$HOME/TP_SIR_MAIN_FRONT_END/"
+
+            - name: run project
+              env:
+                  HOME: /home/sir
+                  PM2_HOME: /home/sir/.pm2
+              run: |
+                  cd "$HOME/TP_SIR_MAIN_FRONT_END"
+                  make build
+                  pm2 startOrReload ecosystem.config.js --update-env
+                  pm2 save --force
+                  pm2 list
+                  pm2 logs sir-app-front --lines 50 --nostream

@@ -31,9 +31,14 @@ type BookingWithRide = {
   driverName?: string;
 };
 
+type Booking = {
+  id?: number | string;
+  rideId: number;
+  passengerId: number;
+};
+
 export default function HistoryRidesPage() {
   const router = useRouter();
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [bookings, setBookings] = useState<BookingWithRide[]>([]);
   const [postedRides, setPostedRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,23 +51,22 @@ export default function HistoryRidesPage() {
         const meRes = await getCurrentUser();
         const meId = meRes.data?.id ?? meRes.data;
         if (!meId) return;
-        setCurrentUserId(Number(meId));
 
         const [bookingsRes, driverRidesRes] = await Promise.all([
           getBookingsByPassengerID(meId),
           getRidesByDriver(meId).catch(() => ({data: []})),
         ]);
 
-        const passengerBookings = bookingsRes.data ?? [];
+        const passengerBookings = (bookingsRes.data ?? []) as Booking[];
         const ridesForBookings = await Promise.all(
-          passengerBookings.map(async (b: any) => {
+          passengerBookings.map(async (b) => {
             const rideRes = await getRideByRideID(b.rideId);
             const ride = rideRes.data as Ride;
             let driverName: string | undefined;
             try {
               const driver = await getUserByID(ride.driverId);
               driverName = driver.data?.name;
-            } catch (e) {
+            } catch {
               driverName = undefined;
             }
             return {bookingId: b.id ?? `${b.rideId}-${b.passengerId}`, ride, driverName};

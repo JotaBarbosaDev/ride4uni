@@ -9,6 +9,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const getErrorMessage = (err: unknown) => {
+    if (err && typeof err === "object") {
+      const response = (err as {response?: {data?: {message?: string}}}).response;
+      if (response?.data?.message) return response.data.message;
+    }
+    if (err instanceof Error) return err.message;
+    return "Something went wrong";
+  };
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -23,16 +32,12 @@ export default function LoginPage() {
       if (res.status !== 200) throw new Error("Login failed");
 
       router.push("/");
-    } catch (err: any) {
-      const message =
-        err?.response?.data?.message || 
-        err?.message ||
-        "Something went wrong";
-      setError(message);
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+    }
   }
-}
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-muted/50 p-6">
