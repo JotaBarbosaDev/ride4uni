@@ -1,3 +1,6 @@
+"use client";
+
+import * as React from "react";
 import {AppSidebar} from "@/components/app-sidebar";
 import {Separator} from "@/components/ui/separator";
 import {
@@ -45,12 +48,44 @@ const averageRating = (ratings: Array<{ rating: number }>) =>
     ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
     : 0;
 
-export const revalidate = 0;
+export default function Page() {
+  const [rides, setRides] = React.useState<Ride[]>([]);
+  const [totalUsers, setTotalUsers] = React.useState(0);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-export default async function Page() {
-  const rides: Ride[] = (await getRidesDashboard()).data;
-  const totalusers = (await getTotalUsers()).data;
-  const activeRidesCount = rides.length;
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        const [ridesResponse, usersResponse] = await Promise.all([
+          getRidesDashboard(),
+          getTotalUsers(),
+        ]);
+
+        if (!isMounted) return;
+
+        setRides(ridesResponse.data || []);
+        setTotalUsers(usersResponse.data?.totalUsers ?? 0);
+      } catch (err) {
+        if (!isMounted) return;
+        setRides([]);
+        setTotalUsers(0);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activeRidesCount = isLoading ? "..." : rides.length;
 
   return (
     <SidebarProvider>
@@ -97,7 +132,9 @@ export default async function Page() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalusers.totalUsers}</div>
+                  <div className="text-2xl font-bold">
+                    {isLoading ? "..." : totalUsers}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     +180.1% from last month
                   </p>

@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-axios.defaults.withCredentials = true;
 
 export const api = axios.create({
   baseURL: "https://sir-api.maruqes.com/api",
+  withCredentials: true,
 });
 
 const redirectToLogin = async () => {
