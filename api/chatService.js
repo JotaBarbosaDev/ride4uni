@@ -13,6 +13,7 @@ function getUserChats(id) {
 }
 
 function getUsers() {
+  console.log("some text");
   return api.get(`/total/count`);
 }
 
