@@ -22,6 +22,7 @@ type Ride = {
   seatCount: number;
   availableSeats: number;
   driverId: number;
+  pricePerRide?: number;
   driver?: { name?: string; ratingsGot?: Array<{ rating: number }> };
 };
 
@@ -118,6 +119,11 @@ export default function SearchRidesPage() {
       alert("Please sign in to book.");
       return;
     }
+    const ride = rides.find((r) => r.id === rideId);
+    if (ride?.driverId === currentUserId) {
+      alert("You can't book your own ride.");
+      return;
+    }
     setBookingRideId(rideId);
     try {
       await createBooking({rideId, passengerId: currentUserId});
@@ -134,6 +140,10 @@ export default function SearchRidesPage() {
   const renderRide = (ride: Ride) => {
     const driverName = ride.driver?.name ?? `Driver #${ride.driverId}`;
     const rating = averageRating(ride.driver?.ratingsGot);
+    const isOwnRide = currentUserId !== null && ride.driverId === currentUserId;
+    const pricePerRide = Number(ride.pricePerRide ?? 0);
+    const occupiedSeats = Math.max(0, ride.seatCount - ride.availableSeats);
+    const pricePerOccupiedSeat = occupiedSeats > 0 ? pricePerRide / occupiedSeats : 0;
     return (
       <Card key={ride.id} className="w-full mt-3">
         <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
@@ -153,9 +163,16 @@ export default function SearchRidesPage() {
                 </span>
               </div>
             </div>
-            <div className="flex flex-col">
-              <p className="text-muted-foreground text-xs">Seat count</p>
-              <h2 className="text-xl font-semibold -mt-1">{ride.availableSeats}/{ride.seatCount}</h2>
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col items-end">
+                <p className="text-muted-foreground text-xs">Seat count</p>
+                <h2 className="text-xl font-semibold -mt-1">{ride.availableSeats}/{ride.seatCount}</h2>
+              </div>
+              <div className="flex flex-col items-end">
+                <p className="text-muted-foreground text-xs">Price per ride</p>
+                <h2 className="text-xl font-semibold -mt-1">EUR {pricePerRide.toFixed(2)}</h2>
+                <p className="text-xs text-muted-foreground">EUR {pricePerOccupiedSeat.toFixed(2)} / occupied seat</p>
+              </div>
             </div>
           </CardTitle>
         </CardHeader>
@@ -197,7 +214,11 @@ export default function SearchRidesPage() {
               <Badge variant="outline">
                 <Users /> {ride.availableSeats} Left
               </Badge>
-              {bookingStatus[ride.id] ? (
+              {isOwnRide ? (
+                <Button size="sm" variant="secondary" disabled>
+                  Your Ride
+                </Button>
+              ) : bookingStatus[ride.id] ? (
                 <Button size="sm" variant="secondary" disabled>
                   Already In
                 </Button>

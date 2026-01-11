@@ -1,21 +1,21 @@
 "use client";
 
-import {useEffect, useMemo, useRef, useState} from "react";
-import {useParams, useRouter} from "next/navigation";
-import {Clock, ArrowLeft, Send} from "lucide-react";
-import {AppSidebar} from "@/components/app-sidebar";
-import {Badge} from "@/components/ui/badge";
-import {Button} from "@/components/ui/button";
-import {Card, CardContent} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Separator} from "@/components/ui/separator";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {getMessagesByChatId, createMessage} from "@/api/messageService";
-import {getUserChats} from "@/api/chatService";
-import {getUserByID} from "@/api/userService";
-import {getCurrentUser} from "@/api/authService";
-import {socket} from "@/Service/socket.js";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Clock, ArrowLeft, Send } from "lucide-react";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getMessagesByChatId, createMessage } from "@/api/messageService";
+import { getUserChats } from "@/api/chatService";
+import { getUserByID } from "@/api/userService";
+import { getCurrentUser } from "@/api/authService";
+import { socket } from "@/Service/socket.js";
 
 type ChatMessage = {
   id: string;
@@ -131,16 +131,16 @@ export default function MessageThreadPage() {
           participantsIds.map(async (pid) => {
             try {
               const u = await getUserByID(pid);
-              return {id: String(pid), name: u.data?.name ?? String(pid)};
+              return { id: String(pid), name: u.data?.name ?? String(pid) };
             } catch (_err) {
-              return {id: String(pid), name: String(pid), _err};
+              return { id: String(pid), name: String(pid), _err };
             }
           })
         );
 
         const messagesRes = await getMessagesByChatId(chatId);
         const messages = extractMessages(messagesRes.data)
-          .map((m) => normalizeMessage(m, {me: meId, receiverId: null}))
+          .map((m) => normalizeMessage(m, { me: meId, receiverId: null }))
           .filter(Boolean) as ChatMessage[];
 
         setChat({
@@ -163,7 +163,7 @@ export default function MessageThreadPage() {
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {hour: "2-digit", minute: "2-digit"});
+    return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
 
   const otherParticipant = useMemo(() => {
@@ -206,12 +206,13 @@ export default function MessageThreadPage() {
   useEffect(() => {
     if (!chatId) return;
     const handleIncoming = (payload: MessageApi | MessageApi[]) => {
-      const incoming = extractMessages(payload).length ? extractMessages(payload) : [payload];
+      const extracted = extractMessages(payload);
+      const incoming = extracted.length ? extracted : (Array.isArray(payload) ? [] : [payload]);
       incoming.forEach((raw) => {
         const incomingChatId = raw?.chatId ?? raw?.chat?.id;
         const activeChatId = chat?.id ?? chatId;
         if (incomingChatId && String(incomingChatId) !== String(activeChatId)) return;
-        const normalized = normalizeMessage(raw, {me, receiverId});
+        const normalized = normalizeMessage(raw, { me, receiverId });
         if (!normalized) return;
         setChat((prev) => {
           if (!prev) return prev;
@@ -324,9 +325,8 @@ export default function MessageThreadPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div
-                          className={`rounded-2xl px-3 py-2 text-sm shadow-sm ${
-                            isMine ? "bg-primary text-primary-foreground" : "bg-white"
-                          }`}
+                          className={`rounded-2xl px-3 py-2 text-sm shadow-sm ${isMine ? "bg-primary text-primary-foreground" : "bg-white"
+                            }`}
                         >
                           <p>{message.content}</p>
                           <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"}`}>

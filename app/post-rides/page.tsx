@@ -1,19 +1,19 @@
 'use client';
 
-import {FormEvent, useState} from "react";
-import {format} from "date-fns";
-import {Calendar as CalendarIcon, Clock, MapPin, Users, DollarSign} from "lucide-react";
+import { FormEvent, useState } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Clock, MapPin, Users, DollarSign } from "lucide-react";
 
-import {AppSidebar} from "@/components/app-sidebar";
-import {Button} from "@/components/ui/button";
-import {Calendar} from "@/components/ui/calendar";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Input} from "@/components/ui/input";
-import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
-import {Separator} from "@/components/ui/separator";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
-import {createRide} from "@/api/ridesService";
-import {getCurrentUser} from "@/api/authService";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { createRide } from "@/api/ridesService";
+import { getCurrentUser } from "@/api/authService";
 
 
 type RideFormValues = {
@@ -197,7 +197,7 @@ export default function PostRidesPage() {
                   <div className="space-y-2">
                     <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <DollarSign className="h-4 w-4" />
-                      Price per Seat (€)
+                      Price per Ride (€)
                     </p>
                     <div className="flex items-center gap-2 rounded-lg border bg-muted/50 px-3 py-3">
                       <Input
@@ -244,18 +244,19 @@ export async function PostRide(ride: RideFormValues) {
     seatCount: Number(ride.seats) || 0,
     availableSeats: Number(ride.seats) || 0,
     driverId: Number(currentUserId),
+    pricePerRide: Number(ride.price) || 0,
   };
 
-try {
-  await createRide(payload);
-} catch (error) {
-  if (error && typeof error === "object") {
-    const response = (error as {response?: {data?: unknown}}).response;
-    if (response?.data) {
-      console.error(response.data);
-      return;
+  try {
+    await createRide(payload);
+  } catch (error) {
+    if (error && typeof error === "object") {
+      const response = (error as { response?: { data?: unknown } }).response;
+      if (response?.data) {
+        console.error(response.data);
+        return;
+      }
     }
+    console.error(error);
   }
-  console.error(error);
-}
 }
