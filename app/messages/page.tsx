@@ -140,11 +140,21 @@ export default function MessagesPage() {
     })?.id;
   };
 
+  const storeReceiverId = (chatId: string, receiverId: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(`chat-receiver:${chatId}`, receiverId);
+    } catch (_err) {
+      // Ignore storage failures (private mode, quota).
+    }
+  };
+
   const onCreateChat = async () => {
     if (!newChatTarget.trim() || !currentUserId) return;
     const targetId = newChatTarget.trim();
     const existing = findExistingChatId(targetId);
     if (existing) {
+      storeReceiverId(existing, targetId);
       router.push(`/messages/${existing}`);
       return;
     }
@@ -155,6 +165,7 @@ export default function MessagesPage() {
       const targetName = users.find((user) => user.id === targetId)?.name ?? targetId;
       const res = await createChat({participants});
       const chatId = String(res.data?.id ?? res.data?._id ?? participants.join("-"));
+      storeReceiverId(chatId, targetId);
       setChats((prev) => [
         {
           id: chatId,
@@ -201,6 +212,9 @@ export default function MessagesPage() {
     const initials = displayName?.slice(0, 1)?.toUpperCase() || "?";
     const lastMessage = chat.lastMessage?.content ?? "No messages";
     const lastMessageTime = chat.lastMessage?.createdAt;
+    const receiverId = currentUserId
+      ? chat.participants.find((p) => p.id !== currentUserId)?.id
+      : undefined;
 
     return (
       <div key={chat.id} className="flex items-start gap-3 rounded-xl bg-gray-100/65 p-3">
@@ -223,7 +237,12 @@ export default function MessagesPage() {
               size="sm"
               className="h-8 px-3"
               disabled={!chat.id}
-              onClick={() => router.push(`/messages/${chat.id}`)}
+              onClick={() => {
+                if (receiverId) {
+                  storeReceiverId(chat.id, receiverId);
+                }
+                router.push(`/messages/${chat.id}`);
+              }}
             >
               Open
             </Button>

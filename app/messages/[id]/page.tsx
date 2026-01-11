@@ -15,6 +15,7 @@ import {getMessagesByChatId, createMessage} from "@/api/messageService";
 import {getUserChats} from "@/api/chatService";
 import {getUserByID} from "@/api/userService";
 import {getCurrentUser} from "@/api/authService";
+import {socket} from "@/Service/socket.js";
 
 type ChatMessage = {
   id: string;
@@ -44,8 +45,64 @@ type MessageApi = {
   from?: string;
   receiverId?: string;
   content?: string;
+  message?: string;
+  text?: string;
+  userId?: string;
+  user?: { id?: string };
+  to?: string;
+  targetId?: string;
+  recipientId?: string;
+  chatId?: string;
+  chat?: { id?: string };
   timestamp?: string;
   createdAt?: string;
+  created_at?: string;
+};
+
+const extractMessages = (payload: unknown): MessageApi[] => {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== "object") return [];
+  const data = payload as { messages?: MessageApi[]; data?: unknown };
+  if (Array.isArray(data.messages)) return data.messages;
+  if (Array.isArray(data.data)) return data.data as MessageApi[];
+  if (data.data && typeof data.data === "object") {
+    const nested = data.data as { messages?: MessageApi[] };
+    if (Array.isArray(nested.messages)) return nested.messages;
+  }
+  return [];
+};
+
+const normalizeMessage = (
+  raw: MessageApi,
+  fallback: { me?: string | null; receiverId?: string | null }
+): ChatMessage | null => {
+  if (!raw) return null;
+  const content = raw.content ?? raw.message ?? raw.text ?? "";
+  if (content === undefined || content === null) return null;
+  const sender = raw.senderId ?? raw.sender ?? raw.from ?? raw.userId ?? raw.user?.id ?? "";
+  const receiver = raw.receiverId ?? raw.to ?? raw.targetId ?? raw.recipientId;
+  let senderId = sender ? String(sender) : "";
+  let receiverId = receiver ? String(receiver) : undefined;
+
+  if (!senderId && fallback.receiverId) {
+    senderId = String(fallback.receiverId);
+  }
+  if (!receiverId && fallback.me && senderId && senderId !== fallback.me) {
+    receiverId = String(fallback.me);
+  }
+  if (!receiverId && fallback.me && senderId === fallback.me && fallback.receiverId) {
+    receiverId = String(fallback.receiverId);
+  }
+
+  const id = raw.id ?? raw._id ?? crypto.randomUUID();
+  const timestamp = raw.timestamp ?? raw.createdAt ?? raw.created_at ?? new Date().toISOString();
+  return {
+    id: String(id),
+    senderId,
+    receiverId,
+    content: String(content),
+    timestamp: String(timestamp),
+  };
 };
 
 export default function MessageThreadPage() {
@@ -56,6 +113,7 @@ export default function MessageThreadPage() {
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [me, setMe] = useState<string | null>(null);
+  const [receiverId, setReceiverId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,7 +124,7 @@ export default function MessageThreadPage() {
         const meId = String(meRes.data?.id ?? meRes.data);
         setMe(meId);
 
-        const chatsRes = await getUserChats();
+        const chatsRes = await getUserChats(meId);
         const target = (chatsRes.data as ChatApi[] ?? []).find((c) => String(c.id ?? c._id) === String(chatId));
         const participantsIds: string[] = target?.participants ?? [];
         const participants = await Promise.all(
@@ -81,13 +139,9 @@ export default function MessageThreadPage() {
         );
 
         const messagesRes = await getMessagesByChatId(chatId);
-        const messages = (messagesRes.data as MessageApi[] ?? []).map((m) => ({
-          id: String(m.id ?? m._id ?? crypto.randomUUID()),
-          senderId: String(m.senderId ?? m.sender ?? m.from ?? ""),
-          receiverId: m.receiverId ? String(m.receiverId) : undefined,
-          content: m.content ?? "",
-          timestamp: m.timestamp ?? m.createdAt ?? new Date().toISOString(),
-        }));
+        const messages = extractMessages(messagesRes.data)
+          .map((m) => normalizeMessage(m, {me: meId, receiverId: null}))
+          .filter(Boolean) as ChatMessage[];
 
         setChat({
           id: String(chatId),
@@ -117,19 +171,88 @@ export default function MessageThreadPage() {
     return chat.participants.find((p) => p.id !== me) ?? null;
   }, [chat, me]);
 
+  const persistReceiverId = (value: string) => {
+    if (typeof window === "undefined" || !chatId) return;
+    try {
+      window.sessionStorage.setItem(`chat-receiver:${chatId}`, value);
+    } catch (_err) {
+      // Ignore storage failures.
+    }
+  };
+
+  useEffect(() => {
+    if (!chat || !me) return;
+    const fromParticipants = otherParticipant?.id ?? chat.participants.find((p) => p.id !== me)?.id ?? null;
+    const fromMessages =
+      chat.messages.find((m) => m.senderId && m.senderId !== me)?.senderId ??
+      chat.messages.find((m) => m.receiverId && m.receiverId !== me)?.receiverId ??
+      chat.messages.find((m) => m.senderId === me && m.receiverId)?.receiverId ??
+      null;
+    const resolved = fromParticipants ?? fromMessages;
+    if (resolved) {
+      setReceiverId(resolved);
+      persistReceiverId(resolved);
+      return;
+    }
+    if (typeof window === "undefined" || !chat?.id) return;
+    try {
+      const stored = window.sessionStorage.getItem(`chat-receiver:${chat.id}`);
+      if (stored) setReceiverId(stored);
+    } catch (_err) {
+      // Ignore storage failures.
+    }
+  }, [chat, me, otherParticipant]);
+
+  useEffect(() => {
+    if (!chatId) return;
+    const handleIncoming = (payload: MessageApi | MessageApi[]) => {
+      const incoming = extractMessages(payload).length ? extractMessages(payload) : [payload];
+      incoming.forEach((raw) => {
+        const incomingChatId = raw?.chatId ?? raw?.chat?.id;
+        const activeChatId = chat?.id ?? chatId;
+        if (incomingChatId && String(incomingChatId) !== String(activeChatId)) return;
+        const normalized = normalizeMessage(raw, {me, receiverId});
+        if (!normalized) return;
+        setChat((prev) => {
+          if (!prev) return prev;
+          if (prev.messages.some((m) => m.id === normalized.id)) return prev;
+          return {
+            ...prev,
+            messages: [...prev.messages, normalized],
+          };
+        });
+        if (normalized.senderId && normalized.senderId !== me) {
+          setReceiverId(normalized.senderId);
+          persistReceiverId(normalized.senderId);
+        }
+      });
+    };
+
+    socket.on("message", handleIncoming);
+    socket.on("receive-message", handleIncoming);
+    return () => {
+      socket.off("message", handleIncoming);
+      socket.off("receive-message", handleIncoming);
+    };
+  }, [chatId, me, receiverId]);
+
   const handleSend = async () => {
     if (!newMessage.trim() || !chat || !me) return;
-    const receiverId = otherParticipant?.id;
+    if (!receiverId) {
+      alert("Unable to identify the receiver for this chat.");
+      return;
+    }
     setSending(true);
     try {
+      const now = new Date().toISOString();
       await createMessage({
         chatId: chat.id,
         senderId: me,
         receiverId,
         content: newMessage.trim(),
+        timestamp: now,
       });
 
-      const now = new Date().toISOString();
       setChat((prev) => prev ? {
         ...prev,
         messages: [...prev.messages, {
