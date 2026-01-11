@@ -84,7 +84,7 @@ export default function HistoryRidesPage() {
     load();
   }, []);
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", {day: "numeric", month: "short"});
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
 
   const handleCancelBooking = async (bookingId: string | number) => {
@@ -94,7 +94,7 @@ export default function HistoryRidesPage() {
       setBookings((prev) => prev.filter((b) => b.bookingId !== bookingId));
     } catch (error) {
       console.error("Failed to cancel booking", error);
-      alert("Não foi possível cancelar");
+      alert("Unable to cancel.");
     } finally {
       setWorkingBooking(null);
     }
@@ -107,7 +107,7 @@ export default function HistoryRidesPage() {
       setPostedRides((prev) => prev.filter((r) => r.id !== rideId));
     } catch (error) {
       console.error("Failed to delete ride", error);
-      alert("Não foi possível apagar a boleia");
+      alert("Unable to delete the ride.");
     } finally {
       setWorkingRide(null);
     }
@@ -167,7 +167,7 @@ export default function HistoryRidesPage() {
                   onClick={() => handleCancelBooking(item.bookingId)}
                   disabled={workingBooking === item.bookingId}
                 >
-                  {workingBooking === item.bookingId ? "A cancelar..." : "Cancelar"}
+                  {workingBooking === item.bookingId ? "Canceling..." : "Cancel"}
                 </Button>
               </div>
             )}
@@ -209,7 +209,7 @@ export default function HistoryRidesPage() {
                 size="icon"
                 onClick={() => handleDeleteRide(ride.id)}
                 disabled={workingRide === ride.id}
-                aria-label="Apagar boleia"
+                aria-label="Delete ride"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -240,23 +240,23 @@ export default function HistoryRidesPage() {
               My Rides
             </h1>
             <p className="text-muted-foreground">
-              Consulta as tuas boleias reservadas e as que publicaste.
+              Review your booked rides and the ones you posted.
             </p>
           </div>
 
           <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
             {loading ? (
-              <p className="text-sm text-muted-foreground px-2">A carregar...</p>
+              <p className="text-sm text-muted-foreground px-2">Loading...</p>
             ) : (
               <div className="flex flex-col items-center gap-6">
                 <div className="w-full">
                   <div className="flex items-center justify-between px-2">
                     <h2 className="text-lg font-semibold">Upcoming Rides</h2>
-                    <p className="text-sm text-muted-foreground">Confirmadas</p>
+                    <p className="text-sm text-muted-foreground">Confirmed</p>
                   </div>
                   <div className="mt-3 space-y-3">
                     {upcoming.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">Sem próximas boleias.</p>
+                      <p className="text-sm text-muted-foreground px-2">No upcoming rides.</p>
                     ) : (
                       upcoming.map((b) => renderRideCard(b))
                     )}
@@ -268,11 +268,11 @@ export default function HistoryRidesPage() {
                 <div className="w-full">
                   <div className="flex items-center justify-between px-2">
                     <h2 className="text-lg font-semibold">Posted by you</h2>
-                    <p className="text-sm text-muted-foreground">Editar ou apagar</p>
+                    <p className="text-sm text-muted-foreground">Edit or delete</p>
                   </div>
                   <div className="mt-3 space-y-3">
                     {postedRides.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">Ainda não publicaste boleias.</p>
+                      <p className="text-sm text-muted-foreground px-2">You haven&apos;t posted any rides yet.</p>
                     ) : (
                       postedRides.map((r) => renderPostedRide(r))
                     )}
@@ -284,11 +284,11 @@ export default function HistoryRidesPage() {
                 <div className="w-full">
                   <div className="flex items-center justify-between px-2">
                     <h2 className="text-lg font-semibold">Past Rides</h2>
-                    <p className="text-sm text-muted-foreground">Viagens concluídas</p>
+                    <p className="text-sm text-muted-foreground">Completed rides</p>
                   </div>
                   <div className="mt-3 space-y-3">
                     {past.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">Sem histórico ainda.</p>
+                      <p className="text-sm text-muted-foreground px-2">No history yet.</p>
                     ) : (
                       past.map((b) => renderRideCard(b, true))
                     )}

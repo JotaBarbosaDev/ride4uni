@@ -27,7 +27,7 @@ export default function BillingPage() {
               Billing
             </h1>
             <p className="text-muted-foreground">
-              Define como queres pagar ou receber pelos teus rides: apenas Dinheiro ou MB Way.
+              Choose how you want to pay or get paid for your rides: cash or MB Way.
             </p>
           </div>
 
@@ -40,31 +40,31 @@ export default function BillingPage() {
                 <div className="grid gap-3 md:grid-cols-2">
                   <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-lg font-semibold">Dinheiro</p>
+                      <p className="text-lg font-semibold">Cash</p>
                       <Badge variant="outline">Default</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Paga ou recebe em numerário no momento da viagem.
+                      Pay or get paid in cash at the time of the trip.
                     </p>
                     <Button variant="outline" className="w-full">
-                      Definir como padrão
+                      Set as default
                     </Button>
                   </div>
 
                   <div className="rounded-xl border bg-muted/40 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <p className="text-lg font-semibold">MB Way</p>
-                      <Badge variant="outline">Disponível</Badge>
+                      <Badge variant="outline">Available</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Usa o teu número MB Way para pagar ou receber instantaneamente.
+                      Use your MB Way number to pay or get paid instantly.
                     </p>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium">Número MB Way</p>
+                      <p className="text-sm font-medium">MB Way number</p>
                       <Input placeholder="+351 9xx xxx xxx" />
                     </div>
                     <Button variant="outline" className="w-full">
-                      Guardar MB Way
+                      Save MB Way
                     </Button>
                   </div>
                 </div>
@@ -72,9 +72,9 @@ export default function BillingPage() {
                 <Separator />
 
                 <div className="space-y-2">
-                  <p className="text-sm font-semibold">Notas</p>
+                  <p className="text-sm font-semibold">Notes</p>
                   <p className="text-sm text-muted-foreground">
-                    Escolhe apenas entre Dinheiro ou MB Way. No momento não suportamos outros métodos de pagamento.
+                    Choose only between Cash or MB Way. We don&apos;t support other payment methods yet.
                   </p>
                 </div>
               </CardContent>
@@ -82,16 +82,16 @@ export default function BillingPage() {
 
             <Card className="w-full bg-primary text-primary-foreground">
               <CardHeader>
-                <CardTitle className="text-xl font-semibold">Resumo</CardTitle>
+                <CardTitle className="text-xl font-semibold">Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="rounded-xl bg-primary/70 p-4">
-                  <p className="text-2xl font-bold">Dinheiro</p>
-                  <p className="text-sm mt-1">Método atual</p>
+                  <p className="text-2xl font-bold">Cash</p>
+                  <p className="text-sm mt-1">Current method</p>
                 </div>
                 <div className="rounded-xl bg-primary/70 p-4">
                   <p className="text-xl font-semibold">MB Way</p>
-                  <p className="text-sm mt-1">Configura para habilitar pagamentos instantâneos</p>
+                  <p className="text-sm mt-1">Set up to enable instant payments</p>
                 </div>
               </CardContent>
             </Card>

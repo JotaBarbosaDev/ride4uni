@@ -138,7 +138,7 @@ export function NavUser({
               <DropdownMenuItem asChild>
                 <Link href="/perfil" className="flex items-center gap-2 w-full">
                   <BadgeCheck />
-                  Perfil
+                  Profile
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

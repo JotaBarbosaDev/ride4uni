@@ -40,7 +40,7 @@ type Ride = {
 };
 
 const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("pt-PT", { day: "numeric", month: "short" });
+  new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short" });
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const averageRating = (ratings: Array<{ rating: number }>) =>
@@ -180,7 +180,7 @@ export default function Page() {
                         </div>
                       </div>
                       <div className="flex flex-col">
-                        <h2 className="text-xl font-semibold -mt-2.5">{"Definir Logica"}</h2> 
+                        <h2 className="text-xl font-semibold -mt-2.5">Set pricing</h2> 
                         <p className="text-muted-foreground text-xs">per seat</p>
                       </div>
                     </CardTitle>

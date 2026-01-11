@@ -27,7 +27,7 @@ export default function NotificationsPage() {
               Notifications
             </h1>
             <p className="text-muted-foreground">
-              Acompanha atualizações das tuas boleias, pedidos e mensagens.
+              Track updates for your rides, requests, and messages.
             </p>
           </div>
 
@@ -40,16 +40,16 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4" />
-                    <p className="font-medium">Pedido aprovado</p>
+                    <p className="font-medium">Request approved</p>
                   </div>
                   <Badge variant="outline">Now</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  O condutor aceitou o teu pedido para a viagem Braga → Porto.
+                  The driver accepted your request for the Braga -> Porto trip.
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>Hoje, 14:12</span>
+                  <span>Today, 14:12</span>
                 </div>
               </div>
 
@@ -57,12 +57,12 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <UserPlus className="h-4 w-4" />
-                    <p className="font-medium">Novo passageiro a aguardar</p>
+                    <p className="font-medium">New passenger pending</p>
                   </div>
                   <Badge variant="outline">Action needed</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  João quer juntar-se à tua viagem Viana do Castelo → Portela. Decide se aceitas.
+                  Joao wants to join your trip Viana do Castelo -> Portela. Decide whether to accept.
                 </p>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" className="h-8 px-3">Decline</Button>
@@ -70,7 +70,7 @@ export default function NotificationsPage() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>Hoje, 13:48</span>
+                  <span>Today, 13:48</span>
                 </div>
               </div>
 
@@ -78,17 +78,17 @@ export default function NotificationsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <MessageSquare className="h-4 w-4" />
-                    <p className="font-medium">Nova mensagem</p>
+                    <p className="font-medium">New message</p>
                   </div>
                   <Badge variant="outline">Unread</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  “Podes enviar o local exato do pick-up?” na viagem de Nov 9.
+                  "Can you send the exact pick-up location?" on the Nov 9 trip.
                 </p>
-                <Button variant="outline" className="h-8 px-3">Abrir chat</Button>
+                <Button variant="outline" className="h-8 px-3">Open chat</Button>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>Hoje, 12:03</span>
+                  <span>Today, 12:03</span>
                 </div>
               </div>
             </CardContent>
@@ -102,57 +102,57 @@ export default function NotificationsPage() {
               <CardContent className="space-y-3">
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">Confirmado</p>
+                    <p className="font-medium">Confirmed</p>
                     <Badge variant="outline">Nov 9, 2:30 PM</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Viana do Castelo → Porto</p>
+                  <p className="text-sm text-muted-foreground">Viana do Castelo -> Porto</p>
                 </div>
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">Postado</p>
+                    <p className="font-medium">Posted</p>
                     <Badge variant="outline">Nov 12, 5:00 PM</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Braga → Guimarães</p>
+                  <p className="text-sm text-muted-foreground">Braga -> Guimaraes</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="w-full">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold">Sistema</CardTitle>
+                <CardTitle className="text-lg font-semibold">System</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium">Atualização de segurança</p>
+                    <p className="font-medium">Security update</p>
                     <Badge variant="outline">Info</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Garante que confirmas pedidos apenas de utilizadores verificados.
+                    Only confirm requests from verified users.
                   </p>
                 </div>
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <XCircle className="h-4 w-4" />
-                      <p className="font-medium">Pedido recusado</p>
+                      <p className="font-medium">Request declined</p>
                     </div>
                     <Badge variant="outline">Nov 8</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Um condutor recusou a tua solicitação. Tenta outras boleias disponíveis.
+                    A driver declined your request. Try other available rides.
                   </p>
                 </div>
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
-                      <p className="font-medium">Lembra-te da hora</p>
+                      <p className="font-medium">Remember the time</p>
                     </div>
                     <Badge variant="outline">Reminder</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Chega ao ponto de encontro 10 minutos antes da partida para evitar atrasos.
+                    Arrive at the meeting point 10 minutes before departure to avoid delays.
                   </p>
                 </div>
               </CardContent>

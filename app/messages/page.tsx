@@ -84,7 +84,7 @@ export default function MessagesPage() {
   const formatTime = (timestamp?: string) => {
     if (!timestamp) return "--";
     const date = new Date(timestamp);
-    return date.toLocaleString("pt-PT", {
+    return date.toLocaleString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       day: "2-digit",
@@ -93,10 +93,10 @@ export default function MessagesPage() {
   };
 
   const highlightName = useCallback((participants: ChatPreview["participants"]) => {
-    if (!participants || participants.length === 0) return "Conversa";
-    if (!currentUserId) return participants[0]?.name ?? "Conversa";
+    if (!participants || participants.length === 0) return "Chat";
+    if (!currentUserId) return participants[0]?.name ?? "Chat";
     const other = participants.find((p) => p.id !== currentUserId);
-    return other?.name ?? participants[0]?.name ?? "Conversa";
+    return other?.name ?? participants[0]?.name ?? "Chat";
   }, [currentUserId]);
 
   const filteredChats = useMemo(() => {
@@ -136,7 +136,7 @@ export default function MessagesPage() {
         {
           id: chatId,
           participants: [
-            {id: currentUserId, name: "Tu"},
+            {id: currentUserId, name: "You"},
             {id: targetId, name: targetId},
           ],
           lastMessage: undefined,
@@ -147,7 +147,7 @@ export default function MessagesPage() {
       router.push(`/messages/${chatId}`);
     } catch (error) {
       console.error("Failed to create chat", error);
-      alert("Não foi possível criar o chat");
+      alert("Unable to create the chat.");
     } finally {
       setCreating(false);
     }
@@ -156,7 +156,7 @@ export default function MessagesPage() {
   const renderCard = (chat: ChatPreview) => {
     const displayName = highlightName(chat.participants);
     const initials = displayName?.slice(0, 1)?.toUpperCase() || "?";
-    const lastMessage = chat.lastMessage?.content ?? "Sem mensagens";
+    const lastMessage = chat.lastMessage?.content ?? "No messages";
     const lastMessageTime = chat.lastMessage?.createdAt;
 
     return (
@@ -182,7 +182,7 @@ export default function MessagesPage() {
               disabled={!chat.id}
               onClick={() => router.push(`/messages/${chat.id}`)}
             >
-              Abrir
+              Open
             </Button>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function MessagesPage() {
               Messages
             </h1>
             <p className="text-muted-foreground">
-              Conversas com condutores e passageiros, agrupadas por chat.
+              Chats with drivers and passengers, grouped by thread.
             </p>
           </div>
 
@@ -218,20 +218,20 @@ export default function MessagesPage() {
             <div className="flex items-center justify-between px-2 gap-3 flex-wrap">
               <div>
                 <h2 className="text-lg font-semibold">Inbox</h2>
-                <p className="text-sm text-muted-foreground">Vê todas as tuas conversas</p>
+                <p className="text-sm text-muted-foreground">See all your conversations</p>
               </div>
               <div className="flex items-center gap-2">
                 <Input
-                  placeholder="ID do utilizador para novo chat"
+                  placeholder="User ID for a new chat"
                   className="max-w-xs"
                   value={newChatTarget}
                   onChange={(e) => setNewChatTarget(e.target.value)}
                 />
                 <Button onClick={onCreateChat} disabled={creating || !newChatTarget.trim()}>
-                  <Plus className="h-4 w-4 mr-1" /> Novo chat
+                  <Plus className="h-4 w-4 mr-1" /> New chat
                 </Button>
                 <Input
-                  placeholder="Pesquisar conversas..."
+                  placeholder="Search conversations..."
                   className="max-w-xs"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -242,9 +242,9 @@ export default function MessagesPage() {
             <Card className="w-full">
               <CardContent className="space-y-3 pt-4">
                 {loading ? (
-                  <p className="text-sm text-muted-foreground">A carregar chats...</p>
+                  <p className="text-sm text-muted-foreground">Loading chats...</p>
                 ) : filteredChats.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Ainda não tens conversas.</p>
+                  <p className="text-sm text-muted-foreground">You don&apos;t have any conversations yet.</p>
                 ) : (
                   filteredChats.map(renderCard)
                 )}

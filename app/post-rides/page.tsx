@@ -37,7 +37,7 @@ export default function PostRidesPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!date || !time || !pickupLocation || !dropoffLocation || !seats) {
-      alert("Preenche todos os campos obrigatórios");
+      alert("Please fill in all required fields.");
       return;
     }
     try {
@@ -57,7 +57,7 @@ export default function PostRidesPage() {
       setTime("");
       setSeats("");
       setPrice("");
-      alert("Boleia publicada");
+      alert("Ride posted.");
     } catch (error) {
       console.error("Failed to post ride", error);
       alert("Failed to post ride");
@@ -86,7 +86,7 @@ export default function PostRidesPage() {
               Post a Ride
             </h1>
             <p className="text-muted-foreground">
-              Adiciona uma nova boleia num layout monocromático, alinhado com as outras páginas.
+              Add a new ride in a monochrome layout, aligned with the other pages.
             </p>
           </div>
 
@@ -94,7 +94,7 @@ export default function PostRidesPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-semibold">Post a New Ride</CardTitle>
               <CardDescription>
-                Preenche os detalhes da tua viagem e publica.
+                Fill in your trip details and publish.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -214,7 +214,7 @@ export default function PostRidesPage() {
                 </div>
 
                 <Button type="submit" className="h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={submitting}>
-                  {submitting ? "A publicar..." : "Post Ride"}
+                  {submitting ? "Publishing..." : "Post Ride"}
                 </Button>
               </form>
             </CardContent>

@@ -26,10 +26,10 @@ export default function PerfilPage() {
         <div className="flex flex-col gap-8">
           <div className="space-y-2">
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
-              Perfil
+              Profile
             </h1>
             <p className="text-muted-foreground">
-              Revê as tuas informações e estatísticas numa interface monocromática.
+              Review your info and stats in a monochrome interface.
             </p>
           </div>
 

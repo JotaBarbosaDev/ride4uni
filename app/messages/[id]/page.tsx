@@ -109,7 +109,7 @@ export default function MessageThreadPage() {
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString("pt-PT", {hour: "2-digit", minute: "2-digit"});
+    return date.toLocaleTimeString("en-US", {hour: "2-digit", minute: "2-digit"});
   };
 
   const otherParticipant = useMemo(() => {
@@ -143,7 +143,7 @@ export default function MessageThreadPage() {
       setNewMessage("");
     } catch (error) {
       console.error("Failed to send message", error);
-      alert("Não foi possível enviar a mensagem");
+      alert("Unable to send the message.");
     } finally {
       setSending(false);
     }
@@ -168,7 +168,7 @@ export default function MessageThreadPage() {
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Voltar">
+              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Back">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export default function MessageThreadPage() {
                       <div className={`flex max-w-xl gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
                         <Avatar className="h-8 w-8 rounded-lg">
                           <AvatarFallback className="rounded-lg">
-                            {(isMine ? "Tu" : otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
+                            {(isMine ? "You" : otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div
@@ -221,7 +221,7 @@ export default function MessageThreadPage() {
 
               <div className="flex items-center gap-2">
                 <Input
-                  placeholder="Escreve a tua mensagem..."
+                  placeholder="Write your message..."
                   className="flex-1"
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
@@ -234,7 +234,7 @@ export default function MessageThreadPage() {
                   disabled={!me || sending}
                 />
                 <Button onClick={handleSend} disabled={!newMessage.trim() || sending || !me}>
-                  <Send className="h-4 w-4 mr-1" /> Enviar
+                  <Send className="h-4 w-4 mr-1" /> Send
                 </Button>
               </div>
             </CardContent>

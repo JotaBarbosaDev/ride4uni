@@ -66,7 +66,7 @@ export default function SearchRidesPage() {
   const averageRating = (ratings?: Array<{ rating: number }>) =>
     ratings?.length ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1) : "0";
 
-  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("pt-PT", {day: "numeric", month: "short"});
+  const formatDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", {day: "numeric", month: "short"});
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
 
   const getErrorMessage = (err: unknown) => {
@@ -75,18 +75,18 @@ export default function SearchRidesPage() {
       if (response?.data?.message) return response.data.message;
     }
     if (err instanceof Error) return err.message;
-    return "Não foi possível reservar";
+    return "Unable to book";
   };
 
   const handleBook = async (rideId: number) => {
     if (!currentUserId) {
-      alert("Precisas de iniciar sessão para reservar.");
+      alert("Please sign in to book.");
       return;
     }
     setBookingRideId(rideId);
     try {
       await createBooking({rideId, passengerId: currentUserId});
-      alert("Reserva criada com sucesso");
+      alert("Booking created successfully");
       setRides((prev) => prev.map((r) => r.id === rideId ? {...r, availableSeats: Math.max(0, r.availableSeats - 1)} : r));
     } catch (error) {
       alert(getErrorMessage(error));
@@ -96,7 +96,7 @@ export default function SearchRidesPage() {
   };
 
   const renderRide = (ride: Ride) => {
-    const driverName = ride.driver?.name ?? `Condutor #${ride.driverId}`;
+    const driverName = ride.driver?.name ?? `Driver #${ride.driverId}`;
     const rating = averageRating(ride.driver?.ratingsGot);
     return (
       <Card key={ride.id} className="w-full mt-3">
@@ -141,7 +141,7 @@ export default function SearchRidesPage() {
                 <div className="w-3 h-3 rounded-full bg-black mr-2.5 mt-3.5"></div>
               </div>
               <div>
-                <p className="text-muted-foreground text-sm">Drop-of</p>
+                <p className="text-muted-foreground text-sm">Drop-off</p>
                 <h2 className="font-medium text-lg">{ride.destination}</h2>
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function SearchRidesPage() {
                 onClick={() => handleBook(ride.id)}
                 disabled={bookingRideId === ride.id || ride.availableSeats <= 0}
               >
-                {bookingRideId === ride.id ? "A reservar..." : "Reservar"}
+                {bookingRideId === ride.id ? "Booking..." : "Book"}
               </Button>
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function SearchRidesPage() {
               Search Rides
             </h1>
             <p className="text-muted-foreground">
-              Explora boleias reais da API.
+              Browse real rides from the API.
             </p>
           </div>
 
@@ -203,7 +203,7 @@ export default function SearchRidesPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-xl font-semibold">Find Your Ride</CardTitle>
               <CardDescription>
-                Filtra por origem, destino e lugares.
+                Filter by origin, destination, and seats.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -252,7 +252,7 @@ export default function SearchRidesPage() {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                {filtered.length} boleias encontradas
+                {filtered.length} rides found
               </p>
             </CardContent>
           </Card>
@@ -260,13 +260,13 @@ export default function SearchRidesPage() {
           <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-lg font-semibold">Available Rides</h2>
-              <p className="text-sm text-muted-foreground">Resultados em tempo real</p>
+              <p className="text-sm text-muted-foreground">Real-time results</p>
             </div>
             <div className="flex flex-col items-center">
               {loading ? (
-                <p className="text-sm text-muted-foreground mt-4">A carregar...</p>
+                <p className="text-sm text-muted-foreground mt-4">Loading...</p>
               ) : filtered.length === 0 ? (
-                <p className="text-sm text-muted-foreground mt-4">Sem resultados para estes filtros.</p>
+                <p className="text-sm text-muted-foreground mt-4">No results for these filters.</p>
               ) : (
                 filtered.map(renderRide)
               )}
