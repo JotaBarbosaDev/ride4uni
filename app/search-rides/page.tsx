@@ -11,7 +11,7 @@ import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sid
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Calendar, Clock, LucideStar, MapPin, Users} from "lucide-react";
 import {getAllRides} from "@/api/ridesService";
-import {createBooking} from "@/api/bookingService";
+import {createBooking, getBookingStatus} from "@/api/bookingService";
 import {getCurrentUser} from "@/api/authService";
 
 type Ride = {
@@ -33,6 +33,7 @@ export default function SearchRidesPage() {
   const [filterPassengers, setFilterPassengers] = useState("1");
   const [bookingRideId, setBookingRideId] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [bookingStatus, setBookingStatus] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -50,6 +51,40 @@ export default function SearchRidesPage() {
 
     load();
   }, []);
+
+  useEffect(() => {
+    if (!currentUserId || rides.length === 0) {
+      setBookingStatus({});
+      return;
+    }
+
+    let cancelled = false;
+    const loadStatuses = async () => {
+      const statuses = await Promise.all(
+        rides.map(async (ride) => {
+          try {
+            const res = await getBookingStatus(ride.id, currentUserId);
+            return {id: ride.id, booked: Boolean(res.data)};
+          } catch (error) {
+            return {id: ride.id, booked: false};
+          }
+        })
+      );
+
+      if (!cancelled) {
+        const next: Record<number, boolean> = {};
+        statuses.forEach(({id, booked}) => {
+          next[id] = booked;
+        });
+        setBookingStatus(next);
+      }
+    };
+
+    loadStatuses();
+    return () => {
+      cancelled = true;
+    };
+  }, [rides, currentUserId]);
 
   const filtered = useMemo(() => {
     const from = filterFrom.trim().toLowerCase();
@@ -87,6 +122,7 @@ export default function SearchRidesPage() {
     try {
       await createBooking({rideId, passengerId: currentUserId});
       alert("Booking created successfully");
+      setBookingStatus((prev) => ({...prev, [rideId]: true}));
       setRides((prev) => prev.map((r) => r.id === rideId ? {...r, availableSeats: Math.max(0, r.availableSeats - 1)} : r));
     } catch (error) {
       alert(getErrorMessage(error));
@@ -161,13 +197,19 @@ export default function SearchRidesPage() {
               <Badge variant="outline">
                 <Users /> {ride.availableSeats} Left
               </Badge>
-              <Button
-                size="sm"
-                onClick={() => handleBook(ride.id)}
-                disabled={bookingRideId === ride.id || ride.availableSeats <= 0}
-              >
-                {bookingRideId === ride.id ? "Booking..." : "Book"}
-              </Button>
+              {bookingStatus[ride.id] ? (
+                <Button size="sm" variant="secondary" disabled>
+                  Already In
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => handleBook(ride.id)}
+                  disabled={bookingRideId === ride.id || ride.availableSeats <= 0}
+                >
+                  {bookingRideId === ride.id ? "Booking..." : "Book"}
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>

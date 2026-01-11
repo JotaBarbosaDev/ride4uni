@@ -13,8 +13,7 @@ function getUserChats(id) {
 }
 
 function getUsers() {
-  console.log("some text");
-  return api.get(`/total/count`);
+  return api.get("/users");
 }
 
 export {createChat, getChatByParticipants, getUserChats, getUsers};

@@ -12,6 +12,10 @@ function getBookingsByPassengerID(passengerId) {
   return api.get(`/bookings/passenger/${passengerId}`);
 }
 
+function getBookingStatus(rideId, passengerId) {
+  return api.get(`/bookings/${rideId}/${passengerId}`);
+}
+
 function deleteBooking(bookingId) {
   return api.delete(`/bookings/${bookingId}`);
 }
@@ -24,6 +28,7 @@ export {
   createBooking,
   getAllBookings,
   getBookingsByPassengerID,
+  getBookingStatus,
   deleteBooking,
   updateBooking,
 };

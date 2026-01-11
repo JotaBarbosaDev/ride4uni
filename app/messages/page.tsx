@@ -11,7 +11,7 @@ import {Separator} from "@/components/ui/separator";
 import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {createChat, getUserChats} from "@/api/chatService";
-import {getUserByID} from "@/api/userService";
+import {getUserByID, getUsers} from "@/api/userService";
 import {getCurrentUser} from "@/api/authService";
 
 type ChatPreview = {
@@ -27,14 +27,21 @@ type ChatApi = {
   lastMessage?: { content?: string; createdAt?: string };
 };
 
+type UserSummary = {
+  id: string;
+  name: string;
+};
+
 export default function MessagesPage() {
   const router = useRouter();
   const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [users, setUsers] = useState<UserSummary[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [newChatTarget, setNewChatTarget] = useState("");
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,6 +51,21 @@ export default function MessagesPage() {
         const me = userRes.data?.id ?? userRes.data?.userId ?? userRes.data;
         console.log("Current user ID extracted:", me);
         setCurrentUserId(String(me))
+        const usersRes = await getUsers();
+        const rawUsers = usersRes.data ?? [];
+        setUsers(
+          rawUsers
+            .map((user: { id?: string; _id?: string; name?: string; email?: string }) => {
+              const id = user.id ?? user._id;
+              if (!id) return null;
+              return {
+                id: String(id),
+                name: user.name ?? user.email ?? String(id),
+              } satisfies UserSummary;
+            })
+            .filter(Boolean) as UserSummary[]
+        );
+
         const chatsRes = await getUserChats(me);
         console.log("getUserChats response:", chatsRes);
         const rawChats: ChatApi[] = chatsRes.data ?? [];
@@ -130,6 +152,7 @@ export default function MessagesPage() {
     setCreating(true);
     try {
       const participants = [currentUserId, targetId];
+      const targetName = users.find((user) => user.id === targetId)?.name ?? targetId;
       const res = await createChat({participants});
       const chatId = String(res.data?.id ?? res.data?._id ?? participants.join("-"));
       setChats((prev) => [
@@ -137,7 +160,7 @@ export default function MessagesPage() {
           id: chatId,
           participants: [
             {id: currentUserId, name: "You"},
-            {id: targetId, name: targetId},
+            {id: targetId, name: targetName},
           ],
           lastMessage: undefined,
         },
@@ -152,6 +175,26 @@ export default function MessagesPage() {
       setCreating(false);
     }
   };
+
+  const filteredUserSuggestions = useMemo(() => {
+    const term = newChatTarget.trim().toLowerCase();
+    if (!term) return [];
+    const candidates = users.filter((user) => user.id !== currentUserId);
+    const scored = candidates
+      .map((user) => {
+        const name = user.name.toLowerCase();
+        const id = user.id.toLowerCase();
+        const nameIndex = name.indexOf(term);
+        const idIndex = id.indexOf(term);
+        const score =
+          nameIndex === 0 ? 0 : nameIndex > 0 ? 1 : idIndex === 0 ? 2 : idIndex > 0 ? 3 : 9;
+        return {user, score};
+      })
+      .filter((item) => item.score < 9)
+      .sort((a, b) => a.score - b.score || a.user.name.localeCompare(b.user.name));
+
+    return scored.slice(0, 3).map((item) => item.user);
+  }, [newChatTarget, users, currentUserId]);
 
   const renderCard = (chat: ChatPreview) => {
     const displayName = highlightName(chat.participants);
@@ -221,12 +264,37 @@ export default function MessagesPage() {
                 <p className="text-sm text-muted-foreground">See all your conversations</p>
               </div>
               <div className="flex items-center gap-2">
-                <Input
-                  placeholder="User ID for a new chat"
-                  className="max-w-xs"
-                  value={newChatTarget}
-                  onChange={(e) => setNewChatTarget(e.target.value)}
-                />
+                <div className="relative max-w-xs w-full">
+                  <Input
+                    placeholder="Type a name or ID"
+                    value={newChatTarget}
+                    onChange={(e) => {
+                      setNewChatTarget(e.target.value);
+                      setSuggestionsOpen(true);
+                    }}
+                    onFocus={() => setSuggestionsOpen(true)}
+                    onBlur={() => {
+                      setTimeout(() => setSuggestionsOpen(false), 120);
+                    }}
+                  />
+                  {suggestionsOpen && filteredUserSuggestions.length > 0 ? (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow">
+                      {filteredUserSuggestions.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-muted"
+                          onClick={() => {
+                            setNewChatTarget(user.id);
+                            setSuggestionsOpen(false);
+                          }}
+                        >
+                          <span className="font-medium">{user.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
                 <Button onClick={onCreateChat} disabled={creating || !newChatTarget.trim()}>
                   <Plus className="h-4 w-4 mr-1" /> New chat
                 </Button>
