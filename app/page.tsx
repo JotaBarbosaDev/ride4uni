@@ -67,7 +67,7 @@ export default function Page() {
 
         setRides(ridesResponse.data || []);
         setTotalUsers(usersResponse.data?.totalUsers ?? 0);
-      } catch (err) {
+      } catch {
         if (!isMounted) return;
         setRides([]);
         setTotalUsers(0);

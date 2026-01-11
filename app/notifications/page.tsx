@@ -45,7 +45,7 @@ export default function NotificationsPage() {
                   <Badge variant="outline">Now</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  The driver accepted your request for the Braga -> Porto trip.
+                  The driver accepted your request for the Braga to Porto trip.
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
                   <Badge variant="outline">Action needed</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Joao wants to join your trip Viana do Castelo -> Portela. Decide whether to accept.
+                  Joao wants to join your trip Viana do Castelo to Portela. Decide whether to accept.
                 </p>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" className="h-8 px-3">Decline</Button>
@@ -83,7 +83,7 @@ export default function NotificationsPage() {
                   <Badge variant="outline">Unread</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  "Can you send the exact pick-up location?" on the Nov 9 trip.
+                  &quot;Can you send the exact pick-up location?&quot; on the Nov 9 trip.
                 </p>
                 <Button variant="outline" className="h-8 px-3">Open chat</Button>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -105,14 +105,14 @@ export default function NotificationsPage() {
                     <p className="font-medium">Confirmed</p>
                     <Badge variant="outline">Nov 9, 2:30 PM</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Viana do Castelo -> Porto</p>
+                  <p className="text-sm text-muted-foreground">Viana do Castelo to Porto</p>
                 </div>
                 <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="font-medium">Posted</p>
                     <Badge variant="outline">Nov 12, 5:00 PM</Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Braga -> Guimaraes</p>
+                  <p className="text-sm text-muted-foreground">Braga to Guimaraes</p>
                 </div>
               </CardContent>
             </Card>
