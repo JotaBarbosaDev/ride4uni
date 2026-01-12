@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {MessagesInbox} from "@/components/messages-inbox";
 import { getMessagesByChatId, createMessage } from "@/api/messageService";
 import { getUserChats } from "@/api/chatService";
 import { getUserByID } from "@/api/userService";
@@ -284,85 +285,91 @@ export default function MessageThreadPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen">
-        <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-3 p-4 border-b bg-background">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Back">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <Avatar className="h-10 w-10 rounded-full">
-              <AvatarImage src="/avatars/shadcn.jpg" alt={participantName} />
-              <AvatarFallback className="rounded-full bg-primary/10 text-primary font-semibold">
-                {participantName.slice(0, 1).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-semibold">{participantName}</p>
-              <p className="text-xs text-muted-foreground">Online</p>
-            </div>
+      <SidebarInset className="p-6 h-svh overflow-hidden">
+        <div className="flex h-full min-h-0 flex-col gap-4 md:flex-row">
+          <div className="flex min-h-0 w-full md:w-[360px] md:shrink-0">
+            <MessagesInbox className="max-w-none h-full min-h-0 p-3" />
           </div>
 
-          {/* Messages */}
-          <div ref={listRef} className="flex-1 overflow-auto p-4 space-y-3">
-            {(chat?.messages ?? []).map((message) => {
-              const isMine = me && message.senderId === me;
-              return (
-                <div
-                  key={message.id}
-                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                >
-                  <div className={`flex max-w-[75%] gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-                    {!isMine && (
-                      <Avatar className="h-8 w-8 rounded-full shrink-0">
-                        <AvatarImage src="/avatars/shadcn.jpg" alt={otherParticipant?.name ?? "User"} />
-                        <AvatarFallback className="rounded-full bg-muted text-xs">
-                          {(otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div
-                      className={`rounded-2xl px-4 py-2.5 ${
-                        isMine 
-                          ? "bg-primary text-primary-foreground rounded-br-md" 
-                          : "bg-muted rounded-bl-md"
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                        {formatTime(message.timestamp)}
-                      </p>
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
+            {/* Header */}
+            <div className="flex items-center gap-3 p-4 border-b bg-background">
+              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Back">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <Avatar className="h-10 w-10 rounded-full">
+                <AvatarImage src="/avatars/shadcn.jpg" alt={participantName} />
+                <AvatarFallback className="rounded-full bg-primary/10 text-primary font-semibold">
+                  {participantName.slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold">{participantName}</p>
+                <p className="text-xs text-muted-foreground">Online</p>
+              </div>
+            </div>
+
+            {/* Messages */}
+            <div ref={listRef} className="flex-1 min-h-0 overflow-auto p-4 space-y-3">
+              {(chat?.messages ?? []).map((message) => {
+                const isMine = me && message.senderId === me;
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                  >
+                    <div className={`flex max-w-[75%] gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                      {!isMine && (
+                        <Avatar className="h-8 w-8 rounded-full shrink-0">
+                          <AvatarImage src="/avatars/shadcn.jpg" alt={otherParticipant?.name ?? "User"} />
+                          <AvatarFallback className="rounded-full bg-muted text-xs">
+                            {(otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div
+                        className={`rounded-2xl px-4 py-2.5 ${
+                          isMine
+                            ? "bg-primary text-primary-foreground rounded-br-md"
+                            : "bg-muted rounded-bl-md"
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                        <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                          {formatTime(message.timestamp)}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          {/* Input */}
-          <div className="p-4 border-t bg-background">
-            <div className="flex items-center gap-3 max-w-4xl mx-auto">
-              <Input
-                placeholder="Type a message..."
-                className="flex-1 rounded-full px-4"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                disabled={!me || sending}
-              />
-              <Button 
-                onClick={handleSend} 
-                disabled={!newMessage.trim() || sending || !me}
-                size="icon"
-                className="rounded-full h-10 w-10"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+            {/* Input */}
+            <div className="p-4 border-t bg-background">
+              <div className="flex items-center gap-3 max-w-4xl mx-auto">
+                <Input
+                  placeholder="Type a message..."
+                  className="flex-1 rounded-full px-4"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  disabled={!me || sending}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!newMessage.trim() || sending || !me}
+                  size="icon"
+                  className="rounded-full h-10 w-10"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
