@@ -19,6 +19,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 
 // This is sample data.
@@ -154,7 +155,8 @@ export const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
+      <SidebarHeader className="relative">
+        <SidebarTrigger className="absolute right-0 top-3 z-20 translate-x-8" />
         <TeamSwitcher teams={data.teams} />
       </SidebarHeader>
       <SidebarContent>

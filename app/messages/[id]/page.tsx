@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMessagesByChatId, createMessage } from "@/api/messageService";
 import { getUserChats } from "@/api/chatService";
@@ -58,6 +58,14 @@ type MessageApi = {
   createdAt?: string;
   created_at?: string;
 };
+
+const toTimestamp = (value: string) => {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+};
+
+const sortMessagesByTimestamp = (messages: ChatMessage[]) =>
+  [...messages].sort((a, b) => toTimestamp(a.timestamp) - toTimestamp(b.timestamp));
 
 const extractMessages = (payload: unknown): MessageApi[] => {
   if (Array.isArray(payload)) return payload;
@@ -146,7 +154,7 @@ export default function MessageThreadPage() {
         setChat({
           id: String(chatId),
           participants,
-          messages,
+          messages: sortMessagesByTimestamp(messages),
         });
       } catch (error) {
         console.error("Failed to load chat", error);
@@ -219,7 +227,7 @@ export default function MessageThreadPage() {
           if (prev.messages.some((m) => m.id === normalized.id)) return prev;
           return {
             ...prev,
-            messages: [...prev.messages, normalized],
+            messages: sortMessagesByTimestamp([...prev.messages, normalized]),
           };
         });
         if (normalized.senderId && normalized.senderId !== me) {
@@ -256,13 +264,13 @@ export default function MessageThreadPage() {
 
       setChat((prev) => prev ? {
         ...prev,
-        messages: [...prev.messages, {
+        messages: sortMessagesByTimestamp([...prev.messages, {
           id: crypto.randomUUID(),
           senderId: me,
           receiverId,
           content: newMessage.trim(),
           timestamp: now,
-        }],
+        }]),
       } : prev);
       setNewMessage("");
     } catch (error) {
@@ -278,16 +286,8 @@ export default function MessageThreadPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="p-28">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-          </div>
-        </header>
+      <SidebarInset className="p-6">
+        
 
         <div className="flex flex-col gap-8">
           <div className="flex items-center justify-between">
@@ -367,3 +367,6 @@ export default function MessageThreadPage() {
     </SidebarProvider>
   );
 }
+
+
+

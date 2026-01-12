@@ -18,7 +18,6 @@ const redirectToLogin = async () => {
     const { redirect } = await import("next/navigation");
     redirect("/login");
   } catch (err) {
-    // Ignore if we're not in a Next.js server context.
   }
 };
 

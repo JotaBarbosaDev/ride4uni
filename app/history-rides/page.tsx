@@ -8,13 +8,14 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Separator} from "@/components/ui/separator";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
+import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {getCurrentUser} from "@/api/authService";
 import {getBookingsByPassengerID, deleteBooking} from "@/api/bookingService";
-import {getRideByRideID, getRidesByDriver, deleteRide} from "@/api/ridesService";
+import {getRideByRideID, getRidesByDriver, deleteRide, updateRide} from "@/api/ridesService";
 import {getUserByID} from "@/api/userService";
 import {createChat, getUserChats} from "@/api/chatService";
+import {createRating} from "@/api/ratingService";
 
 type Ride = {
   id: number;
@@ -24,6 +25,8 @@ type Ride = {
   seatCount: number;
   availableSeats: number;
   driverId: number;
+  status?: string;
+  ratings?: Array<{userPassengerId?: string | number; rating?: number}>;
 };
 
 type BookingWithRide = {
@@ -44,13 +47,25 @@ type ChatApi = {
   participants?: Array<string | number>;
 };
 
+type CreateRatingPayload = {
+  userDriverId: number;
+  userPassengerId: number;
+  rating: number;
+  rideId: number;
+};
+
 export default function HistoryRidesPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<BookingWithRide[]>([]);
   const [postedRides, setPostedRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"passenger" | "driver">("passenger");
   const [workingBooking, setWorkingBooking] = useState<string | number | null>(null);
   const [workingRide, setWorkingRide] = useState<number | null>(null);
+  const [completingRide, setCompletingRide] = useState<number | null>(null);
+  const [ratingRideId, setRatingRideId] = useState<number | null>(null);
+  const [hoveredRideId, setHoveredRideId] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [openingChatFor, setOpeningChatFor] = useState<string | number | null>(null);
 
@@ -171,17 +186,92 @@ export default function HistoryRidesPage() {
     }
   };
 
-  const upcoming = useMemo(() => bookings.filter((b) => new Date(b.ride.dateTime) >= new Date()), [bookings]);
-  const past = useMemo(() => bookings.filter((b) => new Date(b.ride.dateTime) < new Date()), [bookings]);
+  const handleCreateRating = async (rideId: number, driverId: number, rating: number) => {
+    if (!currentUserId) return;
+    setRatingRideId(rideId);
+    try {
+      const payload: CreateRatingPayload = {
+        rideId,
+        userDriverId: driverId,
+        userPassengerId: currentUserId,
+        rating,
+      };
+      await createRating(payload);
+      setBookings((prev) =>
+        prev.map((item) => {
+          if (item.ride.id !== rideId) return item;
+          const nextRatings = (item.ride.ratings ?? []).concat([
+            {userPassengerId: currentUserId, rating},
+          ]);
+          return {
+            ...item,
+            ride: {
+              ...item.ride,
+              ratings: nextRatings,
+            },
+          };
+        })
+      );
+    } catch (error) {
+      console.error("Failed to submit rating", error);
+      alert("Unable to submit rating.");
+    } finally {
+      setRatingRideId(null);
+    }
+  };
 
-  const renderRideCard = (item: BookingWithRide, isPast = false) => {
+  const handleCompleteRide = async (rideId: number) => {
+    setCompletingRide(rideId);
+    try {
+      await updateRide(rideId, {status: "Completed"});
+      setPostedRides((prev) =>
+        prev.map((ride) => (ride.id === rideId ? {...ride, status: "Completed"} : ride))
+      );
+    } catch (error) {
+      console.error("Failed to complete ride", error);
+      alert("Unable to mark the ride as completed.");
+    } finally {
+      setCompletingRide(null);
+    }
+  };
+
+  const upcoming = useMemo(
+    () => bookings.filter((b) => b.ride.status !== "Completed" && b.ride.status !== "Canceled"),
+    [bookings]
+  );
+  const past = useMemo(
+    () => bookings.filter((b) => b.ride.status === "Completed" || b.ride.status === "Canceled"),
+    [bookings]
+  );
+  const upcomingDriver = useMemo(
+    () => postedRides.filter((ride) => ride.status !== "Completed"),
+    [postedRides]
+  );
+  const pastDriver = useMemo(
+    () => postedRides.filter((ride) => ride.status === "Completed"),
+    [postedRides]
+  );
+
+  const renderRideCard = (item: BookingWithRide) => {
     const isSelfDriver = currentUserId !== null && item.ride.driverId === currentUserId;
+    const rideStatus = item.ride.status ?? "Scheduled";
+    const isCompleted = rideStatus === "Completed";
+    const isCanceled = rideStatus === "Canceled";
+    const existingRating = item.ride.ratings?.find(
+      (rating) => String(rating.userPassengerId) === String(currentUserId ?? "")
+    );
+    const ratingValue = existingRating?.rating ?? 0;
+    const canRate = isCompleted && !existingRating;
+    const isHovering = hoveredRideId === item.ride.id && hoveredRating !== null;
+    const displayRating = isHovering ? hoveredRating : ratingValue;
 
     return (
       <Card key={item.bookingId} className="w-full">
         <CardContent className="space-y-4 pt-6">
           <div className="flex items-center justify-between">
-            <Badge className="rounded-full px-3 py-1 text-xs">{isPast ? "Completed" : "Confirmed"}</Badge>
+            <Badge className="rounded-full px-3 py-1 text-xs">
+              {isCompleted ? "Completed" : isCanceled ? "Canceled" : "Scheduled"}
+            </Badge>
             <p className="text-sm text-muted-foreground">{formatDate(item.ride.dateTime)}, {formatTime(item.ride.dateTime)}</p>
           </div>
           <div className="space-y-2 rounded-xl bg-gray-100/65 p-4">
@@ -213,7 +303,7 @@ export default function HistoryRidesPage() {
                   </p>
                 </div>
               </div>
-              {!isPast && (
+              {!isCompleted && !isCanceled && (
                 <div className="flex gap-2">
                 {!isSelfDriver && (
                   <Button
@@ -236,17 +326,58 @@ export default function HistoryRidesPage() {
                 </div>
               )}
             </div>
+            {isCompleted ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map((value) => {
+                    const filled = value <= displayRating;
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={canRate ? "p-1 cursor-pointer" : "p-1 cursor-default"}
+                        onClick={() => {
+                          if (!canRate || ratingRideId === item.ride.id) return;
+                          handleCreateRating(item.ride.id, item.ride.driverId, value);
+                        }}
+                        onMouseEnter={() => {
+                          if (!canRate) return;
+                          setHoveredRideId(item.ride.id);
+                          setHoveredRating(value);
+                        }}
+                        onMouseLeave={() => {
+                          if (!canRate) return;
+                          setHoveredRideId(null);
+                          setHoveredRating(null);
+                        }}
+                        disabled={!canRate || ratingRideId === item.ride.id}
+                        aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
+                      >
+                        <LucideStar
+                          className={
+                            filled
+                              ? "h-4 w-4 text-yellow-500 transition-colors"
+                              : "h-4 w-4 text-muted-foreground transition-colors"
+                          }
+                          fill={filled ? "currentColor" : "none"}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
     );
   };
 
-  const renderPostedRide = (ride: Ride) => (
+  const renderPostedRide = (ride: Ride, isPast = false) => (
     <Card key={ride.id} className="w-full">
       <CardContent className="space-y-4 pt-6">
         <div className="flex items-center justify-between">
-          <Badge className="rounded-full px-3 py-1 text-xs">Posted</Badge>
+          <Badge className="rounded-full px-3 py-1 text-xs">{isPast ? "Completed" : "Posted"}</Badge>
           <p className="text-sm text-muted-foreground">{formatDate(ride.dateTime)}, {formatTime(ride.dateTime)}</p>
         </div>
         <div className="space-y-2 rounded-xl bg-gray-100/65 p-4">
@@ -267,18 +398,28 @@ export default function HistoryRidesPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">You&apos;re driving</p>
-            <div className="flex gap-2">
-              <Badge variant="outline">{ride.availableSeats} seats left</Badge>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleDeleteRide(ride.id)}
-                disabled={workingRide === ride.id}
-                aria-label="Delete ride"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            {!isPast ? (
+              <div className="flex gap-2">
+                <Badge variant="outline">{ride.availableSeats} seats left</Badge>
+                <Button
+                  variant="outline"
+                  onClick={() => handleCompleteRide(ride.id)}
+                  disabled={completingRide === ride.id}
+                >
+                  {completingRide === ride.id ? "Completing..." : "Complete"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleDeleteRide(ride.id)}
+                  disabled={workingRide === ride.id}
+                  aria-label="Delete ride"
+                  className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
       </CardContent>
@@ -288,16 +429,8 @@ export default function HistoryRidesPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="p-28">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-          </div>
-        </header>
+      <SidebarInset className="p-6">
+        
 
         <div className="flex flex-col gap-8">
           <div className="space-y-2 text-center">
@@ -307,6 +440,20 @@ export default function HistoryRidesPage() {
             <p className="text-muted-foreground">
               Review your booked rides and the ones you posted.
             </p>
+            <div className="flex justify-center gap-2 pt-2">
+              <Button
+                variant={viewMode === "passenger" ? "default" : "outline"}
+                onClick={() => setViewMode("passenger")}
+              >
+                Passenger
+              </Button>
+              <Button
+                variant={viewMode === "driver" ? "default" : "outline"}
+                onClick={() => setViewMode("driver")}
+              >
+                Driver
+              </Button>
+            </div>
           </div>
 
           <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
@@ -314,51 +461,70 @@ export default function HistoryRidesPage() {
               <p className="text-sm text-muted-foreground px-2">Loading...</p>
             ) : (
               <div className="flex flex-col items-center gap-6">
-                <div className="w-full">
-                  <div className="flex items-center justify-between px-2">
-                    <h2 className="text-lg font-semibold">Upcoming Rides</h2>
-                    <p className="text-sm text-muted-foreground">Confirmed</p>
-                  </div>
-                  <div className="mt-3 space-y-3">
-                    {upcoming.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">No upcoming rides.</p>
-                    ) : (
-                      upcoming.map((b) => renderRideCard(b))
-                    )}
-                  </div>
-                </div>
+                {viewMode === "passenger" ? (
+                  <>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between px-2">
+                        <h2 className="text-lg font-semibold">Upcoming Rides</h2>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {upcoming.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2">No upcoming rides.</p>
+                        ) : (
+                          upcoming.map((b) => renderRideCard(b))
+                        )}
+                      </div>
+                    </div>
 
-                <Separator className="w-full max-w-xl" />
+                    <Separator className="w-full max-w-xl" />
 
-                <div className="w-full">
-                  <div className="flex items-center justify-between px-2">
-                    <h2 className="text-lg font-semibold">Posted by you</h2>
-                    <p className="text-sm text-muted-foreground">Edit or delete</p>
-                  </div>
-                  <div className="mt-3 space-y-3">
-                    {postedRides.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">You haven&apos;t posted any rides yet.</p>
-                    ) : (
-                      postedRides.map((r) => renderPostedRide(r))
-                    )}
-                  </div>
-                </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between px-2">
+                        <h2 className="text-lg font-semibold">Past Rides</h2>
+                        <p className="text-sm text-muted-foreground">Completed rides</p>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {past.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2">No history yet.</p>
+                        ) : (
+                          past.map((b) => renderRideCard(b))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between px-2">
+                        <h2 className="text-lg font-semibold">Upcoming Drives</h2>
+                        <p className="text-sm text-muted-foreground">Edit or delete</p>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {upcomingDriver.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2">No upcoming drives.</p>
+                        ) : (
+                          upcomingDriver.map((r) => renderPostedRide(r))
+                        )}
+                      </div>
+                    </div>
 
-                <Separator className="w-full max-w-xl" />
+                    <Separator className="w-full max-w-xl" />
 
-                <div className="w-full">
-                  <div className="flex items-center justify-between px-2">
-                    <h2 className="text-lg font-semibold">Past Rides</h2>
-                    <p className="text-sm text-muted-foreground">Completed rides</p>
-                  </div>
-                  <div className="mt-3 space-y-3">
-                    {past.length === 0 ? (
-                      <p className="text-sm text-muted-foreground px-2">No history yet.</p>
-                    ) : (
-                      past.map((b) => renderRideCard(b, true))
-                    )}
-                  </div>
-                </div>
+                    <div className="w-full">
+                      <div className="flex items-center justify-between px-2">
+                        <h2 className="text-lg font-semibold">Past Drives</h2>
+                        <p className="text-sm text-muted-foreground">Completed rides</p>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {pastDriver.length === 0 ? (
+                          <p className="text-sm text-muted-foreground px-2">No past drives.</p>
+                        ) : (
+                          pastDriver.map((r) => renderPostedRide(r, true))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

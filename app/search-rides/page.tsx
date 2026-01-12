@@ -6,8 +6,7 @@ import {Badge} from "@/components/ui/badge";
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
-import {Separator} from "@/components/ui/separator";
-import {SidebarInset, SidebarProvider, SidebarTrigger} from "@/components/ui/sidebar";
+import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {Calendar, Clock, LucideStar, MapPin, Users} from "lucide-react";
 import {getAllRides} from "@/api/ridesService";
@@ -169,9 +168,9 @@ export default function SearchRidesPage() {
                 <h2 className="text-xl font-semibold -mt-1">{ride.availableSeats}/{ride.seatCount}</h2>
               </div>
               <div className="flex flex-col items-end">
-                <p className="text-muted-foreground text-xs">Price per ride</p>
+                <p className="text-muted-foreground text-xs">Price</p>
                 <h2 className="text-xl font-semibold -mt-1">EUR {pricePerRide.toFixed(2)}</h2>
-                <p className="text-xs text-muted-foreground">EUR {pricePerOccupiedSeat.toFixed(2)} / occupied seat</p>
+                <p className="text-xs text-muted-foreground">EUR {pricePerOccupiedSeat.toFixed(2)} / seat</p>
               </div>
             </div>
           </CardTitle>
@@ -241,25 +240,15 @@ export default function SearchRidesPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="p-28">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-          </div>
-        </header>
+      <SidebarInset className="p-6">
+        
 
         <div className="flex flex-col gap-8">
           <div className="space-y-2 text-center">
             <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">
               Search Rides
             </h1>
-            <p className="text-muted-foreground">
-              Browse real rides from the API.
-            </p>
+
           </div>
 
           <Card className="w-full max-w-5xl mx-auto">
@@ -323,7 +312,6 @@ export default function SearchRidesPage() {
           <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3">
             <div className="flex items-center justify-between px-2">
               <h2 className="text-lg font-semibold">Available Rides</h2>
-              <p className="text-sm text-muted-foreground">Real-time results</p>
             </div>
             <div className="flex flex-col items-center">
               {loading ? (
@@ -340,3 +328,5 @@ export default function SearchRidesPage() {
     </SidebarProvider>
   );
 }
+
+

@@ -2,12 +2,7 @@
 
 import * as React from "react";
 import {AppSidebar} from "@/components/app-sidebar";
-import {Separator} from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import {
   Card,
   CardContent,
@@ -90,16 +85,8 @@ export default function Page() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="p-28">
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
-            />
-          </div>
-        </header>
+      <SidebarInset className="p-6">
+        
         <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
           Available Rides
         </h1>
@@ -238,3 +225,6 @@ export default function Page() {
     </SidebarProvider>
   );
 }
+
+
+
