@@ -14,6 +14,7 @@ import {getCurrentUser} from "@/api/authService";
 import {getBookingsByPassengerID, deleteBooking} from "@/api/bookingService";
 import {getRideByRideID, getRidesByDriver, deleteRide} from "@/api/ridesService";
 import {getUserByID} from "@/api/userService";
+import {createChat, getUserChats} from "@/api/chatService";
 
 type Ride = {
   id: number;
@@ -37,6 +38,12 @@ type Booking = {
   passengerId: number;
 };
 
+type ChatApi = {
+  id?: string;
+  _id?: string;
+  participants?: Array<string | number>;
+};
+
 export default function HistoryRidesPage() {
   const router = useRouter();
   const [bookings, setBookings] = useState<BookingWithRide[]>([]);
@@ -44,6 +51,8 @@ export default function HistoryRidesPage() {
   const [loading, setLoading] = useState(true);
   const [workingBooking, setWorkingBooking] = useState<string | number | null>(null);
   const [workingRide, setWorkingRide] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [openingChatFor, setOpeningChatFor] = useState<string | number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +60,8 @@ export default function HistoryRidesPage() {
         const meRes = await getCurrentUser();
         const meId = meRes.data?.id ?? meRes.data;
         if (!meId) return;
+        const normalizedMeId = typeof meId === "string" ? Number(meId) : meId;
+        setCurrentUserId(Number.isFinite(normalizedMeId) ? normalizedMeId : null);
 
         const [bookingsRes, driverRidesRes] = await Promise.all([
           getBookingsByPassengerID(meId),
@@ -87,6 +98,53 @@ export default function HistoryRidesPage() {
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", {day: "numeric", month: "short"});
   const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
 
+  const storeReceiverId = (chatId: string, receiverId: string) => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(`chat-receiver:${chatId}`, receiverId);
+    } catch (_err) {
+      // Ignore storage failures (private mode, quota).
+    }
+  };
+
+  const handleOpenChat = async (driverId: number, bookingId: string | number) => {
+    if (!currentUserId) return;
+    const meId = String(currentUserId);
+    const targetId = String(driverId);
+    setOpeningChatFor(bookingId);
+    try {
+      let chatId: string | undefined;
+      try {
+        const chatsRes = await getUserChats(meId);
+        const rawChats = (chatsRes.data ?? []) as ChatApi[];
+        const existing = rawChats.find((chat) => {
+          const participants = (chat.participants ?? []).map(String);
+          return participants.includes(meId) && participants.includes(targetId);
+        });
+        chatId = existing ? String(existing.id ?? existing._id ?? "") : undefined;
+      } catch (_err) {
+        chatId = undefined;
+      }
+
+      if (!chatId) {
+        const res = await createChat({participants: [meId, targetId]});
+        chatId = String(res.data?.id ?? res.data?._id ?? `${meId}-${targetId}`);
+      }
+
+      if (!chatId) {
+        throw new Error("Missing chat id");
+      }
+
+      storeReceiverId(chatId, targetId);
+      router.push(`/messages/${chatId}`);
+    } catch (error) {
+      console.error("Failed to open chat", error);
+      alert("Unable to open the chat.");
+    } finally {
+      setOpeningChatFor(null);
+    }
+  };
+
   const handleCancelBooking = async (bookingId: string | number) => {
     setWorkingBooking(bookingId);
     try {
@@ -116,66 +174,73 @@ export default function HistoryRidesPage() {
   const upcoming = useMemo(() => bookings.filter((b) => new Date(b.ride.dateTime) >= new Date()), [bookings]);
   const past = useMemo(() => bookings.filter((b) => new Date(b.ride.dateTime) < new Date()), [bookings]);
 
-  const renderRideCard = (item: BookingWithRide, isPast = false) => (
-    <Card key={item.bookingId} className="w-full">
-      <CardContent className="space-y-4 pt-6">
-        <div className="flex items-center justify-between">
-          <Badge className="rounded-full px-3 py-1 text-xs">{isPast ? "Completed" : "Confirmed"}</Badge>
-          <p className="text-sm text-muted-foreground">{formatDate(item.ride.dateTime)}, {formatTime(item.ride.dateTime)}</p>
-        </div>
-        <div className="space-y-2 rounded-xl bg-gray-100/65 p-4">
-          <div className="flex items-start gap-2">
-            <div className="h-2 w-2 rounded-full bg-black mt-2" />
-            <div>
-              <p className="text-muted-foreground text-sm">Pick-up</p>
-              <p className="font-medium">{item.ride.origin}</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <div className="h-2 w-2 rounded-full bg-black mt-2" />
-            <div>
-              <p className="text-muted-foreground text-sm">Drop-off</p>
-              <p className="font-medium">{item.ride.destination}</p>
-            </div>
-          </div>
-          <Separator />
+  const renderRideCard = (item: BookingWithRide, isPast = false) => {
+    const isSelfDriver = currentUserId !== null && item.ride.driverId === currentUserId;
+
+    return (
+      <Card key={item.bookingId} className="w-full">
+        <CardContent className="space-y-4 pt-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-9 w-9 rounded-lg">
-                <AvatarImage src="/avatars/shadcn.jpg" alt="driver" />
-                <AvatarFallback className="rounded-lg">{(item.driverName ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="leading-tight">
-                <p className="font-medium">{item.driverName ?? `Driver #${item.ride.driverId}`}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <LucideStar className="h-3 w-3" /> Driver
-                </p>
+            <Badge className="rounded-full px-3 py-1 text-xs">{isPast ? "Completed" : "Confirmed"}</Badge>
+            <p className="text-sm text-muted-foreground">{formatDate(item.ride.dateTime)}, {formatTime(item.ride.dateTime)}</p>
+          </div>
+          <div className="space-y-2 rounded-xl bg-gray-100/65 p-4">
+            <div className="flex items-start gap-2">
+              <div className="h-2 w-2 rounded-full bg-black mt-2" />
+              <div>
+                <p className="text-muted-foreground text-sm">Pick-up</p>
+                <p className="font-medium">{item.ride.origin}</p>
               </div>
             </div>
-            {!isPast && (
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="h-9 px-3"
-                  onClick={() => router.push(`/messages`)}
-                >
-                  <MessageCircle className="h-4 w-4 mr-1" /> Chat
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-9 px-3"
-                  onClick={() => handleCancelBooking(item.bookingId)}
-                  disabled={workingBooking === item.bookingId}
-                >
-                  {workingBooking === item.bookingId ? "Canceling..." : "Cancel"}
-                </Button>
+            <div className="flex items-start gap-2">
+              <div className="h-2 w-2 rounded-full bg-black mt-2" />
+              <div>
+                <p className="text-muted-foreground text-sm">Drop-off</p>
+                <p className="font-medium">{item.ride.destination}</p>
               </div>
-            )}
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-9 w-9 rounded-lg">
+                  <AvatarImage src="/avatars/shadcn.jpg" alt="driver" />
+                  <AvatarFallback className="rounded-lg">{(item.driverName ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="leading-tight">
+                  <p className="font-medium">{item.driverName ?? `Driver #${item.ride.driverId}`}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <LucideStar className="h-3 w-3" /> Driver
+                  </p>
+                </div>
+              </div>
+              {!isPast && (
+                <div className="flex gap-2">
+                {!isSelfDriver && (
+                  <Button
+                    variant="outline"
+                    className="h-9 px-3"
+                    onClick={() => handleOpenChat(item.ride.driverId, item.bookingId)}
+                    disabled={openingChatFor === item.bookingId}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" /> Chat
+                  </Button>
+                )}
+                  <Button
+                    variant="outline"
+                    className="h-9 px-3"
+                    onClick={() => handleCancelBooking(item.bookingId)}
+                    disabled={workingBooking === item.bookingId}
+                  >
+                    {workingBooking === item.bookingId ? "Canceling..." : "Cancel"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderPostedRide = (ride: Ride) => (
     <Card key={ride.id} className="w-full">
