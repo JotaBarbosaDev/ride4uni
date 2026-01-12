@@ -20,7 +20,7 @@ const ALERT_EVENT = "app-alert";
 const MAX_ALERTS = 3;
 const ALERT_TTL_MS = 6000;
 
-function normalizeType(value: string | undefined) {
+function normalizeType(value: string | undefined): AlertType {
   if (!value) return "success";
   return value.toLowerCase() === "danger" ? "danger" : "success";
 }
@@ -29,7 +29,7 @@ function getTypeLabel(type: AlertType) {
   return type === "danger" ? "Danger" : "Success";
 }
 
-function buildAlertItem(detail: AlertEventDetail) {
+function buildAlertItem(detail: AlertEventDetail): AlertItem | null {
   if (!detail || !detail.message) return null;
   return {
     id: crypto.randomUUID(),
