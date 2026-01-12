@@ -27,6 +27,12 @@ function updateUser(id, payload) {
 function getTotalUsers() {
   return api.get(`/users/total/count`);
 }
+
+function getUserSavings(id) {
+  return api.get(`/users/savings/${id}`);
+}
+
+
 export {
   createUser,
   getUsers,
@@ -35,4 +41,5 @@ export {
   deleteUser,
   updateUser,
   getTotalUsers,
+  getUserSavings,
 };

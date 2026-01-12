@@ -42,16 +42,17 @@ export  function ActiveNowCard({
   }, [autoConnect])
 
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Active Now</CardTitle>
-        <ActivityIcon className="h-4 w-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium text-muted-foreground">Active Now</CardTitle>
+        <div className="rounded-full bg-orange-100 p-2 dark:bg-orange-900/30">
+          <ActivityIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{count}</div>
-        <p className="text-xs text-muted-foreground">+201 since last hour</p>
+      <CardContent className="text-center">
+        <div className="text-3xl font-bold">{count ?? "..."}</div>
+        <p className="text-xs text-muted-foreground mt-1">Users online</p>
       </CardContent>
     </Card>
   )
 }
-

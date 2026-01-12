@@ -140,38 +140,37 @@ export default function SearchRidesPage() {
     const driverName = ride.driver?.name ?? `Driver #${ride.driverId}`;
     const rating = averageRating(ride.driver?.ratingsGot);
     const isOwnRide = currentUserId !== null && ride.driverId === currentUserId;
+    const isAlreadyIn = bookingStatus[ride.id];
     const pricePerRide = Number(ride.pricePerRide ?? 0);
     const occupiedSeats = Math.max(0, ride.seatCount - ride.availableSeats);
-    const pricePerOccupiedSeat = occupiedSeats > 0 ? pricePerRide / occupiedSeats : 0;
+    
+    const isParticipant = isOwnRide || isAlreadyIn;
+    const splittingCount = isParticipant ? occupiedSeats : occupiedSeats + 1;
+    const pricePerPerson = splittingCount > 0 ? pricePerRide / splittingCount : pricePerRide;
+    
     return (
       <Card key={ride.id} className="w-full mt-3">
         <CardHeader className="flex flex-column items-center justify-between space-y-0 pb-2">
           <CardTitle className="flex w-full justify-between text-sm font-medium">
-            <div className="flex flex-row gap-2">
-              <Avatar className="h-8 w-8 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 rounded-full">
                 <AvatarImage src="/avatars/shadcn.jpg" alt={driverName} />
-                <AvatarFallback className="rounded-lg">{driverName.slice(0, 1).toUpperCase()}</AvatarFallback>
+                <AvatarFallback className="rounded-full">{driverName.slice(0, 1).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{driverName}</span>
-                <span className="truncate text-xs flex flex-row items-center">
-                  <LucideStar className="h-3 w-3 mr-1" />
-                  <p className="text-muted-foreground">
-                    {rating} Rating
-                  </p>
-                </span>
+              <div>
+                <span className="font-semibold">{driverName}</span>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <LucideStar className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                  <span>{rating}</span>
+                </div>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="flex flex-col items-end">
-                <p className="text-muted-foreground text-xs">Seat count</p>
-                <h2 className="text-xl font-semibold -mt-1">{ride.availableSeats}/{ride.seatCount}</h2>
-              </div>
-              <div className="flex flex-col items-end">
-                <p className="text-muted-foreground text-xs">Price</p>
-                <h2 className="text-xl font-semibold -mt-1">EUR {pricePerRide.toFixed(2)}</h2>
-                <p className="text-xs text-muted-foreground">EUR {pricePerOccupiedSeat.toFixed(2)} / seat</p>
-              </div>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Ride total: €{pricePerRide.toFixed(2)}</p>
+              <div className="text-2xl font-bold text-primary">€{pricePerPerson.toFixed(2)}</div>
+              <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
+                <Users className="h-3 w-3" /> {splittingCount} splitting
+              </p>
             </div>
           </CardTitle>
         </CardHeader>
