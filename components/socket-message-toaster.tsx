@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useRef, useState} from "react";
 import {usePathname, useRouter} from "next/navigation";
-import {MessageSquare, X} from "lucide-react";
+import {Info, MessageSquare, X} from "lucide-react";
 import {socket} from "@/Service/socket.js";
 import {getCurrentUser} from "@/api/authService";
 
@@ -14,9 +14,11 @@ type SocketPayload = {
 
 type ToastItem = {
   id: string;
+  kind: "message" | "notification";
   title: string;
   description?: string;
-  chatId?: string;
+  actionLabel?: string;
+  actionHref?: string;
 };
 
 //Filtrar o ChatId da pagina atual//
@@ -88,26 +90,47 @@ export function SocketMessageToaster() {
   }
 
   useEffect(function () {
-    function handleIncoming(payload: SocketPayload) {
+    function handleSocketToast(kind: "message" | "notification", payload: SocketPayload) {
       if (!payload) return;
-      if (me && payload.senderId && payload.senderId === me) return;
 
-      if (activeChatId && payload.chatId && String(payload.chatId) === String(activeChatId)) {
+      if (kind === "message") {
+        if (me && payload.senderId && payload.senderId === me) return;
+        if (activeChatId && payload.chatId && String(payload.chatId) === String(activeChatId)) {
+          return;
+        }
+
+        pushToast({
+          id: crypto.randomUUID(),
+          kind: "message",
+          title: "New message",
+          description: payload.message || "You received a new message.",
+          actionLabel: "Open chat",
+          actionHref: payload.chatId ? `/messages/${payload.chatId}` : "/messages",
+        });
         return;
       }
 
-      const toastId = crypto.randomUUID();
       pushToast({
-        id: toastId,
-        title: "New message",
-        description: payload.message || "You received a new message.",
-        chatId: payload.chatId,
+        id: crypto.randomUUID(),
+        kind: "notification",
+        title: "New notification",
+        description: payload.message || "You have a new notification.",
       });
     }
 
-    socket.on("receive-message", handleIncoming);
+    function handleMessage(payload: SocketPayload) {
+      handleSocketToast("message", payload);
+    }
+
+    function handleNotification(payload: SocketPayload) {
+      handleSocketToast("notification", payload);
+    }
+
+    socket.on("receive-message", handleMessage);
+    socket.on("receive-notification", handleNotification);
     return function () {
-      socket.off("receive-message", handleIncoming);
+      socket.off("receive-message", handleMessage);
+      socket.off("receive-notification", handleNotification);
     };
   }, [activeChatId, me]);
 
@@ -127,24 +150,29 @@ export function SocketMessageToaster() {
         >
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <MessageSquare className="h-4 w-4" />
+              {toast.kind === "notification" ? (
+                <Info className="h-4 w-4" />
+              ) : (
+                <MessageSquare className="h-4 w-4" />
+              )}
             </div>
             <div className="flex-1 space-y-1">
               <p className="text-sm font-semibold">{toast.title}</p>
               {toast.description ? (
                 <p className="text-xs text-muted-foreground line-clamp-2">{toast.description}</p>
               ) : null}
-              <button
-                type="button"
-                className="text-xs font-medium text-primary hover:underline"
-                onClick={function () {
-                  const target = toast.chatId ? `/messages/${toast.chatId}` : "/messages";
-                  router.push(target);
-                  removeToast(toast.id);
-                }}
-              >
-                Open chat
-              </button>
+              {toast.actionHref ? (
+                <button
+                  type="button"
+                  className="text-xs font-medium text-primary hover:underline"
+                  onClick={function () {
+                    router.push(toast.actionHref as string);
+                    removeToast(toast.id);
+                  }}
+                >
+                  {toast.actionLabel || "Open"}
+                </button>
+              ) : null}
             </div>
             <button
               type="button"

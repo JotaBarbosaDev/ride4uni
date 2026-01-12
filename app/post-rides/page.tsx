@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import { createRide } from "@/api/ridesService";
 import { getCurrentUser } from "@/api/authService";
+import {showAlert} from "@/components/alert-toaster";
 
 
 type RideFormValues = {
@@ -36,7 +37,7 @@ export default function PostRidesPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!date || !time || !pickupLocation || !dropoffLocation || !seats) {
-      alert("Please fill in all required fields.");
+      showAlert("Danger", "Please fill in all required fields.");
       return;
     }
     try {
@@ -56,10 +57,10 @@ export default function PostRidesPage() {
       setTime("");
       setSeats("");
       setPrice("");
-      alert("Ride posted.");
+      showAlert("Success", "Ride posted.");
     } catch (error) {
       console.error("Failed to post ride", error);
-      alert("Failed to post ride");
+      showAlert("Danger", "Failed to post ride.");
     } finally {
       setSubmitting(false);
     }

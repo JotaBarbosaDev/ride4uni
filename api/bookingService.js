@@ -16,14 +16,13 @@ function getBookingStatus(rideId, passengerId) {
   return api.get(`/bookings/${rideId}/${passengerId}`);
 }
 
-function deleteBooking(bookingId) {
-  return api.delete(`/bookings/${bookingId}`);
+function deleteBooking(rideId, passengerId) {
+  return api.delete(`/bookings/${rideId}/${passengerId}`);
 }
 
 function updateBooking(bookingId, payload) {
   return api.put(`/bookings/${bookingId}`, payload);
 }
-
 export {
   createBooking,
   getAllBookings,

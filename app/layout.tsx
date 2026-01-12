@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import {SocketConnector} from "@/components/socket-connector";
 import {SocketMessageToaster} from "@/components/socket-message-toaster";
+import {AlertToaster} from "@/components/alert-toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,7 @@ export default function RootLayout({
       >
         <SocketConnector />
         <SocketMessageToaster />
+        <AlertToaster />
         {children}
       </body>
     </html>

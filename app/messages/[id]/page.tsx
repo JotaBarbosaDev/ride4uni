@@ -2,13 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Clock, ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getMessagesByChatId, createMessage } from "@/api/messageService";
@@ -16,6 +13,7 @@ import { getUserChats } from "@/api/chatService";
 import { getUserByID } from "@/api/userService";
 import { getCurrentUser } from "@/api/authService";
 import { socket } from "@/Service/socket.js";
+import { showAlert } from "@/components/alert-toaster";
 
 type ChatMessage = {
   id: string;
@@ -248,7 +246,7 @@ export default function MessageThreadPage() {
   const handleSend = async () => {
     if (!newMessage.trim() || !chat || !me) return;
     if (!receiverId) {
-      alert("Unable to identify the receiver for this chat.");
+      showAlert("Danger", "Unable to identify the receiver for this chat.");
       return;
     }
     setSending(true);
@@ -275,7 +273,7 @@ export default function MessageThreadPage() {
       setNewMessage("");
     } catch (error) {
       console.error("Failed to send message", error);
-      alert("Unable to send the message.");
+      showAlert("Danger", "Unable to send the message.");
     } finally {
       setSending(false);
     }
@@ -286,82 +284,87 @@ export default function MessageThreadPage() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset className="p-6">
-        
-
-        <div className="flex flex-col gap-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Back">
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-10 w-10 rounded-lg">
-                  <AvatarImage src="/avatars/shadcn.jpg" alt={participantName} />
-                  <AvatarFallback className="rounded-lg">{participantName.slice(0, 1).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="leading-tight">
-                  <p className="font-semibold">{participantName}</p>
-                </div>
-              </div>
+      <SidebarInset className="flex flex-col h-screen">
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center gap-3 p-4 border-b bg-background">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/messages")} aria-label="Back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Avatar className="h-10 w-10 rounded-full">
+              <AvatarImage src="/avatars/shadcn.jpg" alt={participantName} />
+              <AvatarFallback className="rounded-full bg-primary/10 text-primary font-semibold">
+                {participantName.slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold">{participantName}</p>
+              <p className="text-xs text-muted-foreground">Online</p>
             </div>
-            <Badge variant="outline">Chat #{chatId}</Badge>
           </div>
 
-          <Card className="w-full max-w-5xl mx-auto bg-muted/50 rounded-xl">
-            <CardContent className="p-4 space-y-4">
-              <div ref={listRef} className="space-y-3 max-h-[60vh] overflow-auto pr-1">
-                {(chat?.messages ?? []).map((message) => {
-                  const isMine = me && message.senderId === me;
-                  return (
+          {/* Messages */}
+          <div ref={listRef} className="flex-1 overflow-auto p-4 space-y-3">
+            {(chat?.messages ?? []).map((message) => {
+              const isMine = me && message.senderId === me;
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                >
+                  <div className={`flex max-w-[75%] gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
+                    {!isMine && (
+                      <Avatar className="h-8 w-8 rounded-full shrink-0">
+                        <AvatarImage src="/avatars/shadcn.jpg" alt={otherParticipant?.name ?? "User"} />
+                        <AvatarFallback className="rounded-full bg-muted text-xs">
+                          {(otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     <div
-                      key={message.id}
-                      className={`flex ${isMine ? "justify-end" : "justify-start"}`}
+                      className={`rounded-2xl px-4 py-2.5 ${
+                        isMine 
+                          ? "bg-primary text-primary-foreground rounded-br-md" 
+                          : "bg-muted rounded-bl-md"
+                      }`}
                     >
-                      <div className={`flex max-w-xl gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}>
-                        <Avatar className="h-8 w-8 rounded-lg">
-                          <AvatarFallback className="rounded-lg">
-                            {(isMine ? "You" : otherParticipant?.name ?? "?").slice(0, 1).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`rounded-2xl px-3 py-2 text-sm shadow-sm ${isMine ? "bg-primary text-primary-foreground" : "bg-white"
-                            }`}
-                        >
-                          <p>{message.content}</p>
-                          <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                            <Clock className="h-3 w-3 inline mr-1" />
-                            {formatTime(message.timestamp)}
-                          </p>
-                        </div>
-                      </div>
+                      <p className="text-sm">{message.content}</p>
+                      <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                        {formatTime(message.timestamp)}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-              <Separator />
-
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder="Write your message..."
-                  className="flex-1"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  disabled={!me || sending}
-                />
-                <Button onClick={handleSend} disabled={!newMessage.trim() || sending || !me}>
-                  <Send className="h-4 w-4 mr-1" /> Send
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Input */}
+          <div className="p-4 border-t bg-background">
+            <div className="flex items-center gap-3 max-w-4xl mx-auto">
+              <Input
+                placeholder="Type a message..."
+                className="flex-1 rounded-full px-4"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                disabled={!me || sending}
+              />
+              <Button 
+                onClick={handleSend} 
+                disabled={!newMessage.trim() || sending || !me}
+                size="icon"
+                className="rounded-full h-10 w-10"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

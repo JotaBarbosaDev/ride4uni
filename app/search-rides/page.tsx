@@ -12,6 +12,7 @@ import {Calendar, Clock, LucideStar, MapPin, Users} from "lucide-react";
 import {getAllRides} from "@/api/ridesService";
 import {createBooking, getBookingStatus} from "@/api/bookingService";
 import {getCurrentUser} from "@/api/authService";
+import {showAlert} from "@/components/alert-toaster";
 
 type Ride = {
   id: number;
@@ -115,22 +116,22 @@ export default function SearchRidesPage() {
 
   const handleBook = async (rideId: number) => {
     if (!currentUserId) {
-      alert("Please sign in to book.");
+      showAlert("Danger", "Please sign in to book.");
       return;
     }
     const ride = rides.find((r) => r.id === rideId);
     if (ride?.driverId === currentUserId) {
-      alert("You can't book your own ride.");
+      showAlert("Danger", "You can't book your own ride.");
       return;
     }
     setBookingRideId(rideId);
     try {
       await createBooking({rideId, passengerId: currentUserId});
-      alert("Booking created successfully");
+      showAlert("Success", "Booking created successfully.");
       setBookingStatus((prev) => ({...prev, [rideId]: true}));
       setRides((prev) => prev.map((r) => r.id === rideId ? {...r, availableSeats: Math.max(0, r.availableSeats - 1)} : r));
     } catch (error) {
-      alert(getErrorMessage(error));
+      showAlert("Danger", getErrorMessage(error));
     } finally {
       setBookingRideId(null);
     }

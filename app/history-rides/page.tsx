@@ -16,6 +16,7 @@ import {getRideByRideID, getRidesByDriver, deleteRide, updateRide} from "@/api/r
 import {getUserByID} from "@/api/userService";
 import {createChat, getUserChats} from "@/api/chatService";
 import {createRating} from "@/api/ratingService";
+import {showAlert} from "@/components/alert-toaster";
 
 type Ride = {
   id: number;
@@ -30,13 +31,12 @@ type Ride = {
 };
 
 type BookingWithRide = {
-  bookingId: number | string;
   ride: Ride;
   driverName?: string;
+  passengerId: number;
 };
 
 type Booking = {
-  id?: number | string;
   rideId: number;
   passengerId: number;
 };
@@ -60,14 +60,14 @@ export default function HistoryRidesPage() {
   const [postedRides, setPostedRides] = useState<Ride[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"passenger" | "driver">("passenger");
-  const [workingBooking, setWorkingBooking] = useState<string | number | null>(null);
+  const [workingBooking, setWorkingBooking] = useState<string | null>(null);
   const [workingRide, setWorkingRide] = useState<number | null>(null);
   const [completingRide, setCompletingRide] = useState<number | null>(null);
   const [ratingRideId, setRatingRideId] = useState<number | null>(null);
   const [hoveredRideId, setHoveredRideId] = useState<number | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [openingChatFor, setOpeningChatFor] = useState<string | number | null>(null);
+  const [openingChatFor, setOpeningChatFor] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -95,7 +95,7 @@ export default function HistoryRidesPage() {
             } catch {
               driverName = undefined;
             }
-            return {bookingId: b.id ?? `${b.rideId}-${b.passengerId}`, ride, driverName};
+            return {ride, driverName, passengerId: b.passengerId};
           })
         );
         setBookings(ridesForBookings);
@@ -122,11 +122,11 @@ export default function HistoryRidesPage() {
     }
   };
 
-  const handleOpenChat = async (driverId: number, bookingId: string | number) => {
+  const handleOpenChat = async (driverId: number, rideId: number, passengerId: number) => {
     if (!currentUserId) return;
     const meId = String(currentUserId);
     const targetId = String(driverId);
-    setOpeningChatFor(bookingId);
+    setOpeningChatFor(getBookingToken(rideId, passengerId));
     try {
       let chatId: string | undefined;
       try {
@@ -154,20 +154,22 @@ export default function HistoryRidesPage() {
       router.push(`/messages/${chatId}`);
     } catch (error) {
       console.error("Failed to open chat", error);
-      alert("Unable to open the chat.");
+      showAlert("Danger", "Unable to open the chat.");
     } finally {
       setOpeningChatFor(null);
     }
   };
 
-  const handleCancelBooking = async (bookingId: string | number) => {
-    setWorkingBooking(bookingId);
+  const handleCancelBooking = async (rideId: number, passengerId: number) => {
+    setWorkingBooking(getBookingToken(rideId, passengerId));
     try {
-      await deleteBooking(bookingId);
-      setBookings((prev) => prev.filter((b) => b.bookingId !== bookingId));
+      await deleteBooking(rideId, passengerId);
+      setBookings((prev) =>
+        prev.filter((b) => !(b.ride.id === rideId && b.passengerId === passengerId))
+      );
     } catch (error) {
       console.error("Failed to cancel booking", error);
-      alert("Unable to cancel.");
+      showAlert("Danger", "Unable to cancel.");
     } finally {
       setWorkingBooking(null);
     }
@@ -180,7 +182,7 @@ export default function HistoryRidesPage() {
       setPostedRides((prev) => prev.filter((r) => r.id !== rideId));
     } catch (error) {
       console.error("Failed to delete ride", error);
-      alert("Unable to delete the ride.");
+      showAlert("Danger", "Unable to delete the ride.");
     } finally {
       setWorkingRide(null);
     }
@@ -214,7 +216,7 @@ export default function HistoryRidesPage() {
       );
     } catch (error) {
       console.error("Failed to submit rating", error);
-      alert("Unable to submit rating.");
+      showAlert("Danger", "Unable to submit rating.");
     } finally {
       setRatingRideId(null);
     }
@@ -227,13 +229,16 @@ export default function HistoryRidesPage() {
       setPostedRides((prev) =>
         prev.map((ride) => (ride.id === rideId ? {...ride, status: "Completed"} : ride))
       );
+      showAlert("Success", "Ride has been completed.");
     } catch (error) {
       console.error("Failed to complete ride", error);
-      alert("Unable to mark the ride as completed.");
+      showAlert("Danger", "Unable to mark the ride as completed.");
     } finally {
       setCompletingRide(null);
     }
   };
+
+  const getBookingToken = (rideId: number, passengerId: number) => `${rideId}-${passengerId}`;
 
   const upcoming = useMemo(
     () => bookings.filter((b) => b.ride.status !== "Completed" && b.ride.status !== "Canceled"),
@@ -265,8 +270,10 @@ export default function HistoryRidesPage() {
     const isHovering = hoveredRideId === item.ride.id && hoveredRating !== null;
     const displayRating = isHovering ? hoveredRating : ratingValue;
 
+    const bookingToken = getBookingToken(item.ride.id, item.passengerId);
+
     return (
-      <Card key={item.bookingId} className="w-full">
+      <Card key={bookingToken} className="w-full">
         <CardContent className="space-y-4 pt-6">
           <div className="flex items-center justify-between">
             <Badge className="rounded-full px-3 py-1 text-xs">
@@ -309,8 +316,8 @@ export default function HistoryRidesPage() {
                   <Button
                     variant="outline"
                     className="h-9 px-3"
-                    onClick={() => handleOpenChat(item.ride.driverId, item.bookingId)}
-                    disabled={openingChatFor === item.bookingId}
+                    onClick={() => handleOpenChat(item.ride.driverId, item.ride.id, item.passengerId)}
+                    disabled={openingChatFor === bookingToken}
                   >
                     <MessageCircle className="h-4 w-4 mr-1" /> Chat
                   </Button>
@@ -318,10 +325,10 @@ export default function HistoryRidesPage() {
                   <Button
                     variant="outline"
                     className="h-9 px-3"
-                    onClick={() => handleCancelBooking(item.bookingId)}
-                    disabled={workingBooking === item.bookingId}
+                    onClick={() => handleCancelBooking(item.ride.id, item.passengerId)}
+                    disabled={workingBooking === bookingToken}
                   >
-                    {workingBooking === item.bookingId ? "Canceling..." : "Cancel"}
+                    {workingBooking === bookingToken ? "Canceling..." : "Cancel"}
                   </Button>
                 </div>
               )}

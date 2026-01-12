@@ -2,28 +2,27 @@
 
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {useRouter} from "next/navigation";
-import {Clock, Plus} from "lucide-react";
 import {AppSidebar} from "@/components/app-sidebar";
-import {Button} from "@/components/ui/button";
 import {Card, CardContent} from "@/components/ui/card";
 import {Input} from "@/components/ui/input";
 import {SidebarInset, SidebarProvider} from "@/components/ui/sidebar";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
-import {createChat, getUserChats} from "@/api/chatService";
+import {getUserChats} from "@/api/chatService";
 import {getUserByID, getUsers} from "@/api/userService";
 import {getCurrentUser} from "@/api/authService";
 
 type ChatPreview = {
   id: string;
   participants: Array<{ id: string; name: string; avatar?: string }>;
-  lastMessage?: { content?: string; createdAt?: string };
+  lastMessage?: { content?: string; createdAt?: string; timestamp?: string; created_at?: string };
 };
 
 type ChatApi = {
   id?: string;
   _id?: string;
   participants?: string[];
-  lastMessage?: { content?: string; createdAt?: string };
+  lastMessage?: { content?: string; createdAt?: string; timestamp?: string; created_at?: string };
+  messages?: Array<{ content?: string; timestamp?: string; createdAt?: string; created_at?: string }>;
 };
 
 type UserSummary = {
@@ -38,9 +37,6 @@ export default function MessagesPage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [newChatTarget, setNewChatTarget] = useState("");
-  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -69,6 +65,37 @@ export default function MessagesPage() {
         console.log("getUserChats response:", chatsRes);
         const rawChats: ChatApi[] = chatsRes.data ?? [];
 
+        const getMessageTime = (message?: {
+          timestamp?: string;
+          createdAt?: string;
+          created_at?: string;
+        }) => {
+          const value = message?.timestamp ?? message?.createdAt ?? message?.created_at ?? "";
+          const parsed = Date.parse(value);
+          return Number.isNaN(parsed) ? 0 : parsed;
+        };
+
+        const resolveLastMessage = (chat: ChatApi) => {
+          if (chat.lastMessage) {
+            return {
+              content: chat.lastMessage.content,
+              createdAt: chat.lastMessage.createdAt ?? chat.lastMessage.timestamp ?? chat.lastMessage.created_at,
+            };
+          }
+          const messages = chat.messages ?? [];
+          if (!messages.length) return undefined;
+          let latest = messages[0];
+          messages.forEach((message) => {
+            if (getMessageTime(message) > getMessageTime(latest)) {
+              latest = message;
+            }
+          });
+          return {
+            content: latest.content,
+            createdAt: latest.timestamp ?? latest.createdAt ?? latest.created_at,
+          };
+        };
+
         const resolved = await Promise.all(
           rawChats.map(async (chat) => {
             const participantIds: string[] = chat.participants ?? [];
@@ -86,7 +113,7 @@ export default function MessagesPage() {
             return {
               id: String(chat.id ?? chat._id ?? participantIds.join("-")),
               participants: participantUsers,
-              lastMessage: chat.lastMessage,
+              lastMessage: resolveLastMessage(chat),
             } satisfies ChatPreview;
           })
         );
@@ -131,14 +158,6 @@ export default function MessagesPage() {
     });
   }, [chats, search, highlightName]);
 
-  const findExistingChatId = (targetId: string) => {
-    return chats.find((c) => {
-      if (!currentUserId) return false;
-      const ids = c.participants.map((p) => p.id);
-      return ids.includes(currentUserId) && ids.includes(targetId);
-    })?.id;
-  };
-
   const storeReceiverId = (chatId: string, receiverId: string) => {
     if (typeof window === "undefined") return;
     try {
@@ -148,104 +167,37 @@ export default function MessagesPage() {
     }
   };
 
-  const onCreateChat = async () => {
-    if (!newChatTarget.trim() || !currentUserId) return;
-    const targetId = newChatTarget.trim();
-    const existing = findExistingChatId(targetId);
-    if (existing) {
-      storeReceiverId(existing, targetId);
-      router.push(`/messages/${existing}`);
-      return;
-    }
-
-    setCreating(true);
-    try {
-      const participants = [currentUserId, targetId];
-      const targetName = users.find((user) => user.id === targetId)?.name ?? targetId;
-      const res = await createChat({participants});
-      const chatId = String(res.data?.id ?? res.data?._id ?? participants.join("-"));
-      storeReceiverId(chatId, targetId);
-      setChats((prev) => [
-        {
-          id: chatId,
-          participants: [
-            {id: currentUserId, name: "You"},
-            {id: targetId, name: targetName},
-          ],
-          lastMessage: undefined,
-        },
-        ...prev,
-      ]);
-      setNewChatTarget("");
-      router.push(`/messages/${chatId}`);
-    } catch (error) {
-      console.error("Failed to create chat", error);
-      alert("Unable to create the chat.");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const filteredUserSuggestions = useMemo(() => {
-    const term = newChatTarget.trim().toLowerCase();
-    if (!term) return [];
-    const candidates = users.filter((user) => user.id !== currentUserId);
-    const scored = candidates
-      .map((user) => {
-        const name = user.name.toLowerCase();
-        const id = user.id.toLowerCase();
-        const nameIndex = name.indexOf(term);
-        const idIndex = id.indexOf(term);
-        const score =
-          nameIndex === 0 ? 0 : nameIndex > 0 ? 1 : idIndex === 0 ? 2 : idIndex > 0 ? 3 : 9;
-        return {user, score};
-      })
-      .filter((item) => item.score < 9)
-      .sort((a, b) => a.score - b.score || a.user.name.localeCompare(b.user.name));
-
-    return scored.slice(0, 3).map((item) => item.user);
-  }, [newChatTarget, users, currentUserId]);
-
   const renderCard = (chat: ChatPreview) => {
     const displayName = highlightName(chat.participants);
     const initials = displayName?.slice(0, 1)?.toUpperCase() || "?";
-    const lastMessage = chat.lastMessage?.content ?? "No messages";
-    const lastMessageTime = chat.lastMessage?.createdAt;
+    const lastMessage = chat.lastMessage?.content ?? "No messages yet";
+    const lastMessageTime =
+      chat.lastMessage?.createdAt ?? chat.lastMessage?.timestamp ?? chat.lastMessage?.created_at;
     const receiverId = currentUserId
       ? chat.participants.find((p) => p.id !== currentUserId)?.id
       : undefined;
 
     return (
-      <div key={chat.id} className="flex items-start gap-3 rounded-xl bg-gray-100/65 p-3">
-        <Avatar className="h-10 w-10 rounded-lg">
+      <div
+        key={chat.id}
+        className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer border border-transparent hover:border-border"
+        onClick={() => {
+          if (receiverId) {
+            storeReceiverId(chat.id, receiverId);
+          }
+          router.push(`/messages/${chat.id}`);
+        }}
+      >
+        <Avatar className="h-12 w-12 rounded-full">
           <AvatarImage src={chat.participants?.[0]?.avatar ?? "/avatars/shadcn.jpg"} alt={displayName} />
-          <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+          <AvatarFallback className="rounded-full bg-primary/10 text-primary font-semibold">{initials}</AvatarFallback>
         </Avatar>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <p className="font-semibold">{displayName}</p>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">{formatTime(lastMessageTime)}</p>
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold truncate">{displayName}</p>
+            <p className="text-xs text-muted-foreground whitespace-nowrap">{formatTime(lastMessageTime)}</p>
           </div>
-          <p className="text-sm text-muted-foreground line-clamp-2">{lastMessage}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3"
-              disabled={!chat.id}
-              onClick={() => {
-                if (receiverId) {
-                  storeReceiverId(chat.id, receiverId);
-                }
-                router.push(`/messages/${chat.id}`);
-              }}
-            >
-              Open
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground truncate mt-0.5">{lastMessage}</p>
         </div>
       </div>
     );
@@ -267,50 +219,16 @@ export default function MessagesPage() {
             </p>
           </div>
 
-          <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-3 space-y-4">
-            <div className="flex items-center justify-between px-2 gap-3 flex-wrap">
+          <div className="w-full max-w-5xl mx-auto bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min p-4 space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
                 <h2 className="text-lg font-semibold">Inbox</h2>
                 <p className="text-sm text-muted-foreground">See all your conversations</p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative max-w-xs w-full">
-                  <Input
-                    placeholder="Type a name or ID"
-                    value={newChatTarget}
-                    onChange={(e) => {
-                      setNewChatTarget(e.target.value);
-                      setSuggestionsOpen(true);
-                    }}
-                    onFocus={() => setSuggestionsOpen(true)}
-                    onBlur={() => {
-                      setTimeout(() => setSuggestionsOpen(false), 120);
-                    }}
-                  />
-                  {suggestionsOpen && filteredUserSuggestions.length > 0 ? (
-                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-background shadow">
-                      {filteredUserSuggestions.map((user) => (
-                        <button
-                          key={user.id}
-                          type="button"
-                          className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-muted"
-                          onClick={() => {
-                            setNewChatTarget(user.id);
-                            setSuggestionsOpen(false);
-                          }}
-                        >
-                          <span className="font-medium">{user.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-                <Button onClick={onCreateChat} disabled={creating || !newChatTarget.trim()}>
-                  <Plus className="h-4 w-4 mr-1" /> New chat
-                </Button>
+              <div className="flex items-center gap-2 flex-wrap">
                 <Input
                   placeholder="Search conversations..."
-                  className="max-w-xs"
+                  className="max-w-[200px]"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -318,11 +236,14 @@ export default function MessagesPage() {
             </div>
 
             <Card className="w-full">
-              <CardContent className="space-y-3 pt-4">
+              <CardContent className="divide-y p-2">
                 {loading ? (
-                  <p className="text-sm text-muted-foreground">Loading chats...</p>
+                  <p className="text-sm text-muted-foreground p-4">Loading chats...</p>
                 ) : filteredChats.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">You don&apos;t have any conversations yet.</p>
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No conversations yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Start a new chat to get going!</p>
+                  </div>
                 ) : (
                   filteredChats.map(renderCard)
                 )}
