@@ -32,30 +32,16 @@ type ChatDetail = {
 
 type ChatApi = {
   id?: string;
-  _id?: string;
   participants?: string[];
 };
 
 type MessageApi = {
   id?: string;
-  _id?: string;
+  chatId?: string;
   senderId?: string;
-  sender?: string;
-  from?: string;
   receiverId?: string;
   content?: string;
-  message?: string;
-  text?: string;
-  userId?: string;
-  user?: { id?: string };
-  to?: string;
-  targetId?: string;
-  recipientId?: string;
-  chatId?: string;
-  chat?: { id?: string };
   timestamp?: string;
-  createdAt?: string;
-  created_at?: string;
 };
 
 const toTimestamp = (value: string) => {
@@ -84,10 +70,10 @@ const normalizeMessage = (
   fallback: { me?: string | null; receiverId?: string | null }
 ): ChatMessage | null => {
   if (!raw) return null;
-  const content = raw.content ?? raw.message ?? raw.text ?? "";
+  const content = raw.content ?? "";
   if (content === undefined || content === null) return null;
-  const sender = raw.senderId ?? raw.sender ?? raw.from ?? raw.userId ?? raw.user?.id ?? "";
-  const receiver = raw.receiverId ?? raw.to ?? raw.targetId ?? raw.recipientId;
+  const sender = raw.senderId ?? "";
+  const receiver = raw.receiverId;
   let senderId = sender ? String(sender) : "";
   let receiverId = receiver ? String(receiver) : undefined;
 
@@ -101,8 +87,8 @@ const normalizeMessage = (
     receiverId = String(fallback.receiverId);
   }
 
-  const id = raw.id ?? raw._id ?? crypto.randomUUID();
-  const timestamp = raw.timestamp ?? raw.createdAt ?? raw.created_at ?? new Date().toISOString();
+  const id = raw.id ?? crypto.randomUUID();
+  const timestamp = raw.timestamp ?? new Date().toISOString();
   return {
     id: String(id),
     senderId,
@@ -132,7 +118,7 @@ export default function MessageThreadPage() {
         setMe(meId);
 
         const chatsRes = await getUserChats(meId);
-        const target = (chatsRes.data as ChatApi[] ?? []).find((c) => String(c.id ?? c._id) === String(chatId));
+        const target = (chatsRes.data as ChatApi[] ?? []).find((c) => String(c.id) === String(chatId));
         const participantsIds: string[] = target?.participants ?? [];
         const participants = await Promise.all(
           participantsIds.map(async (pid) => {
@@ -216,7 +202,7 @@ export default function MessageThreadPage() {
       const extracted = extractMessages(payload);
       const incoming = extracted.length ? extracted : (Array.isArray(payload) ? [] : [payload]);
       incoming.forEach((raw) => {
-        const incomingChatId = raw?.chatId ?? raw?.chat?.id;
+        const incomingChatId = raw?.chatId;
         const activeChatId = chat?.id ?? chatId;
         if (incomingChatId && String(incomingChatId) !== String(activeChatId)) return;
         const normalized = normalizeMessage(raw, { me, receiverId });

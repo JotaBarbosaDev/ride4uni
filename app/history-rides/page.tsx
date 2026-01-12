@@ -43,7 +43,6 @@ type Booking = {
 
 type ChatApi = {
   id?: string;
-  _id?: string;
   participants?: Array<string | number>;
 };
 
@@ -136,14 +135,14 @@ export default function HistoryRidesPage() {
           const participants = (chat.participants ?? []).map(String);
           return participants.includes(meId) && participants.includes(targetId);
         });
-        chatId = existing ? String(existing.id ?? existing._id ?? "") : undefined;
+        chatId = existing ? String(existing.id ?? "") : undefined;
       } catch (_err) {
         chatId = undefined;
       }
 
       if (!chatId) {
         const res = await createChat({participants: [meId, targetId]});
-        chatId = String(res.data?.id ?? res.data?._id ?? `${meId}-${targetId}`);
+        chatId = String(res.data?.id ?? `${meId}-${targetId}`);
       }
 
       if (!chatId) {

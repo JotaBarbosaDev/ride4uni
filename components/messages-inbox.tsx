@@ -7,32 +7,24 @@ import {Input} from "@/components/ui/input";
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar";
 import {cn} from "@/lib/utils";
 import {getUserChats} from "@/api/chatService";
-import {getUserByID, getUsers} from "@/api/userService";
+import {getUserByID} from "@/api/userService";
 import {getCurrentUser} from "@/api/authService";
 
 type ChatPreview = {
   id: string;
   participants: Array<{ id: string; name: string; avatar?: string }>;
-  lastMessage?: { content?: string; createdAt?: string; timestamp?: string; created_at?: string };
+  lastMessage?: { content?: string; timestamp?: string };
 };
 
 type ChatApi = {
   id?: string;
-  _id?: string;
   participants?: string[];
-  lastMessage?: { content?: string; createdAt?: string; timestamp?: string; created_at?: string };
-  messages?: Array<{ content?: string; timestamp?: string; createdAt?: string; created_at?: string }>;
-};
-
-type UserSummary = {
-  id: string;
-  name: string;
+  messages?: Array<{ content?: string; timestamp?: string }>;
 };
 
 export function MessagesInbox({className}: {className?: string}) {
   const router = useRouter();
   const [chats, setChats] = useState<ChatPreview[]>([]);
-  const [users, setUsers] = useState<UserSummary[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -43,41 +35,19 @@ export function MessagesInbox({className}: {className?: string}) {
         const userRes = await getCurrentUser();
         const me = userRes.data?.id ?? userRes.data?.userId ?? userRes.data;
         setCurrentUserId(String(me));
-        const usersRes = await getUsers();
-        const rawUsers = usersRes.data ?? [];
-        setUsers(
-          rawUsers
-            .map((user: { id?: string; _id?: string; name?: string; email?: string }) => {
-              const id = user.id ?? user._id;
-              if (!id) return null;
-              return {
-                id: String(id),
-                name: user.name ?? user.email ?? String(id),
-              } satisfies UserSummary;
-            })
-            .filter(Boolean) as UserSummary[]
-        );
 
         const chatsRes = await getUserChats(me);
         const rawChats: ChatApi[] = chatsRes.data ?? [];
 
         const getMessageTime = (message?: {
           timestamp?: string;
-          createdAt?: string;
-          created_at?: string;
         }) => {
-          const value = message?.timestamp ?? message?.createdAt ?? message?.created_at ?? "";
+          const value = message?.timestamp ?? "";
           const parsed = Date.parse(value);
           return Number.isNaN(parsed) ? 0 : parsed;
         };
 
         const resolveLastMessage = (chat: ChatApi) => {
-          if (chat.lastMessage) {
-            return {
-              content: chat.lastMessage.content,
-              createdAt: chat.lastMessage.createdAt ?? chat.lastMessage.timestamp ?? chat.lastMessage.created_at,
-            };
-          }
           const messages = chat.messages ?? [];
           if (!messages.length) return undefined;
           let latest = messages[0];
@@ -88,7 +58,7 @@ export function MessagesInbox({className}: {className?: string}) {
           });
           return {
             content: latest.content,
-            createdAt: latest.timestamp ?? latest.createdAt ?? latest.created_at,
+            timestamp: latest.timestamp,
           };
         };
 
@@ -107,7 +77,7 @@ export function MessagesInbox({className}: {className?: string}) {
             );
 
             return {
-              id: String(chat.id ?? chat._id ?? participantIds.join("-")),
+              id: String(chat.id ?? participantIds.join("-")),
               participants: participantUsers,
               lastMessage: resolveLastMessage(chat),
             } satisfies ChatPreview;
@@ -167,8 +137,7 @@ export function MessagesInbox({className}: {className?: string}) {
     const displayName = highlightName(chat.participants);
     const initials = displayName?.slice(0, 1)?.toUpperCase() || "?";
     const lastMessage = chat.lastMessage?.content ?? "No messages yet";
-    const lastMessageTime =
-      chat.lastMessage?.createdAt ?? chat.lastMessage?.timestamp ?? chat.lastMessage?.created_at;
+    const lastMessageTime = chat.lastMessage?.timestamp;
     const receiverId = currentUserId
       ? chat.participants.find((p) => p.id !== currentUserId)?.id
       : undefined;
