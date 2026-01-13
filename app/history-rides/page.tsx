@@ -469,18 +469,18 @@ export default function HistoryRidesPage() {
               <div className="mt-5 flex justify-end gap-2">
                 <Button
                   variant="outline"
-                  onClick={() => setConfirmDeleteRideId(null)}
-                  disabled={workingRide === confirmDeleteRideId}
-                >
-                  No
-                </Button>
-                <Button
-                  variant="outline"
                   className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
                   onClick={handleConfirmDeleteRide}
                   disabled={workingRide === confirmDeleteRideId}
                 >
-                  {workingRide === confirmDeleteRideId ? "Deleting..." : "Yes"}
+                  {workingRide === confirmDeleteRideId ? "Deleting..." : "Yes, cancel"}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDeleteRideId(null)}
+                  disabled={workingRide === confirmDeleteRideId}
+                >
+                  No
                 </Button>
               </div>
             </div>
