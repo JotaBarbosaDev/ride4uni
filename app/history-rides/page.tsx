@@ -473,7 +473,7 @@ export default function HistoryRidesPage() {
                   onClick={handleConfirmDeleteRide}
                   disabled={workingRide === confirmDeleteRideId}
                 >
-                  {workingRide === confirmDeleteRideId ? "Deleting..." : "Yes, cancel"}
+                  {workingRide === confirmDeleteRideId ? "Deleting..." : "Yes"}
                 </Button>
                 <Button
                   variant="outline"
