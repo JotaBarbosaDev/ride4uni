@@ -5,7 +5,13 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Car, Users, ChartNoAxesCombined, Calendar, Clock } from "lucide-react";
+import {
+    Car,
+    Users,
+    ChartNoAxesCombined,
+    Calendar,
+    Clock,
+} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LucideStar } from "lucide-react";
 import { getRidesDashboard } from "@/api/ridesService";
@@ -104,16 +110,17 @@ export default function Page() {
         <SidebarProvider>
             <AppSidebar />
             <SidebarInset className="p-6">
-                <h1 className="scroll-m-20 text-center text-4xl font-extrabold tracking-tight text-balance">
-                    Available Rides
-                </h1>
-                <p className="text-center text-muted-foreground">
-                    Find your perfect ride match.
-                </p>
-                <h2></h2>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="w-full p-6 flex justify-center">
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 w-full max-w-6xl">
+                <div className="text-center mb-4 pt-8 md:pt-0">
+                    <h1 className="scroll-m-20 text-2xl md:text-4xl font-extrabold tracking-tight text-balance">
+                        Available Rides
+                    </h1>
+                    <p className="text-center text-muted-foreground text-sm md:text-base">
+                        Find your perfect ride match.
+                    </p>
+                </div>
+                <div className="flex flex-1 flex-col gap-4 p-2 md:p-4 pt-0">
+                    <div className="w-full p-2 md:p-6 flex justify-center">
+                        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 w-full max-w-6xl">
                             <Card className="hover:shadow-md transition-shadow">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium text-muted-foreground">
