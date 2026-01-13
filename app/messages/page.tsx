@@ -15,7 +15,7 @@ export default function MessagesPage() {
               Messages
             </h1>
             <p className="text-muted-foreground">
-              Chats with drivers and passengers, grouped by thread.
+              Chat with other students.
             </p>
           </div>
 

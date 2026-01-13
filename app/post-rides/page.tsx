@@ -25,6 +25,14 @@ type RideFormValues = {
   price: string;
 };
 
+function buildRideDateTime(selectedDate?: Date, selectedTime?: string) {
+  if (!selectedDate || !selectedTime) return null;
+  const [hours, minutes] = selectedTime.split(":").map(Number);
+  const combined = new Date(selectedDate);
+  combined.setHours(hours ?? 0, minutes ?? 0, 0, 0);
+  return combined;
+}
+
 export default function PostRidesPage() {
   const [pickupLocation, setPickupLocation] = useState("");
   const [dropoffLocation, setDropoffLocation] = useState("");
@@ -38,6 +46,11 @@ export default function PostRidesPage() {
     event.preventDefault();
     if (!date || !time || !pickupLocation || !dropoffLocation || !seats) {
       showAlert("Danger", "Please fill in all required fields.");
+      return;
+    }
+    const rideDateTime = buildRideDateTime(date, time);
+    if (!rideDateTime || rideDateTime.getTime() < Date.now()) {
+      showAlert("Danger", "Please choose a future date and time.");
       return;
     }
     try {
@@ -78,7 +91,7 @@ export default function PostRidesPage() {
               Post a Ride
             </h1>
             <p className="text-muted-foreground">
-              Add a new ride in a monochrome layout, aligned with the other pages.
+              Add a new ride to start helping.
             </p>
           </div>
 
@@ -218,13 +231,7 @@ export default function PostRidesPage() {
 }
 
 export async function PostRide(ride: RideFormValues) {
-  const toDateTime = (selectedDate?: Date, selectedTime?: string) => {
-    if (!selectedDate || !selectedTime) return undefined;
-    const [h, m] = selectedTime.split(":").map(Number);
-    const combined = new Date(selectedDate);
-    combined.setHours(h ?? 0, m ?? 0, 0, 0);
-    return combined.toISOString();
-  };
+  const rideDateTime = buildRideDateTime(ride.date, ride.time);
 
   const currentUser = await getCurrentUser();
   const currentUserId = currentUser.data?.id ?? currentUser.data;
@@ -232,7 +239,7 @@ export async function PostRide(ride: RideFormValues) {
   const payload = {
     origin: ride.pickupLocation,
     destination: ride.dropoffLocation,
-    dateTime: toDateTime(ride.date, ride.time),
+    dateTime: rideDateTime ? rideDateTime.toISOString() : undefined,
     seatCount: Number(ride.seats) || 0,
     availableSeats: Number(ride.seats) || 0,
     driverId: Number(currentUserId),
