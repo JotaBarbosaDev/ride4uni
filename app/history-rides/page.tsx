@@ -67,6 +67,7 @@ export default function HistoryRidesPage() {
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [openingChatFor, setOpeningChatFor] = useState<string | null>(null);
+  const [confirmDeleteRideId, setConfirmDeleteRideId] = useState<number | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -185,6 +186,13 @@ export default function HistoryRidesPage() {
     } finally {
       setWorkingRide(null);
     }
+  };
+
+  const handleConfirmDeleteRide = async () => {
+    if (confirmDeleteRideId === null) return;
+    const rideId = confirmDeleteRideId;
+    await handleDeleteRide(rideId);
+    setConfirmDeleteRideId(null);
   };
 
   const handleCreateRating = async (rideId: number, driverId: number, rating: number) => {
@@ -417,7 +425,7 @@ export default function HistoryRidesPage() {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handleDeleteRide(ride.id)}
+                  onClick={() => setConfirmDeleteRideId(ride.id)}
                   disabled={workingRide === ride.id}
                   aria-label="Delete ride"
                   className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -436,6 +444,48 @@ export default function HistoryRidesPage() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="p-6">
+        {confirmDeleteRideId !== null ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            onClick={() => {
+              if (workingRide === confirmDeleteRideId) return;
+              setConfirmDeleteRideId(null);
+            }}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl bg-background p-6 shadow-lg"
+              onClick={(event) => event.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="confirm-cancel-ride-title"
+              aria-describedby="confirm-cancel-ride-description"
+            >
+              <h3 id="confirm-cancel-ride-title" className="text-lg font-semibold">
+                Cancel ride
+              </h3>
+              <p id="confirm-cancel-ride-description" className="mt-2 text-sm text-muted-foreground">
+                Are you sure you want to cancel this ride?
+              </p>
+              <div className="mt-5 flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmDeleteRideId(null)}
+                  disabled={workingRide === confirmDeleteRideId}
+                >
+                  No
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={handleConfirmDeleteRide}
+                  disabled={workingRide === confirmDeleteRideId}
+                >
+                  {workingRide === confirmDeleteRideId ? "Deleting..." : "Yes"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         
 
         <div className="flex flex-col gap-8">
