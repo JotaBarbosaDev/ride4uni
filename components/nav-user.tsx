@@ -5,10 +5,7 @@ import {useRouter} from "next/navigation";
 import {getUserByID} from "@/api/userService";
 import { setCookie,destroyCookie } from "nookies"; 
 import {
-  BadgeCheck,
-  Bell,
   ChevronsUpDown,
-  CreditCard,
   LogOut,
   MessageSquare,
 } from "lucide-react"
@@ -135,24 +132,6 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href="/perfil" className="flex items-center gap-2 w-full">
-                  <BadgeCheck />
-                  Profile
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/billing" className="flex items-center gap-2 w-full">
-                  <CreditCard />
-                  Billing
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/notifications" className="flex items-center gap-2 w-full">
-                  <Bell />
-                  Notifications
-                </Link>
-              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/messages" className="flex items-center gap-2 w-full">
                   <MessageSquare />
