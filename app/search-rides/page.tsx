@@ -23,6 +23,7 @@ type Ride = {
   availableSeats: number;
   driverId: number;
   pricePerRide?: number;
+  status?: string;
   driver?: { name?: string; ratingsGot?: Array<{ rating: number }> };
 };
 
@@ -95,7 +96,9 @@ export default function SearchRidesPage() {
       const matchesFrom = from ? ride.origin.toLowerCase().includes(from) : true;
       const matchesTo = to ? ride.destination.toLowerCase().includes(to) : true;
       const matchesSeats = ride.availableSeats >= passengers;
-      return matchesFrom && matchesTo && matchesSeats;
+      const rideStatus = ride.status ?? "Scheduled";
+      const matchesStatus = rideStatus === "Scheduled";
+      return matchesFrom && matchesTo && matchesSeats && matchesStatus;
     });
   }, [rides, filterFrom, filterTo, filterPassengers]);
 
