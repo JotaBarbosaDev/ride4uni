@@ -2,7 +2,9 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import {createUser} from "../../api/userService";
+import {createUser, getUserByEmail} from "../../api/userService";
+import {showAlert} from "@/components/alert-toaster";
+import allowedEmailRegex from "../../lib/allowedEmailRegex";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -29,6 +31,24 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
+      if (!allowedEmailRegex.test(email)) {
+        setError("Email must end with @ipvc.pt or @estg.ipvc.pt.");
+        return;
+      }
+      let existingUser = null;
+      try {
+        const existingResponse = await getUserByEmail(email);
+        existingUser = existingResponse?.data ?? null;
+      } catch (lookupError) {
+        const status = (lookupError as {response?: {status?: number}}).response?.status;
+        if (status !== 404) {
+          throw lookupError;
+        }
+      }
+      if (existingUser) {
+        showAlert("danger", "Email already in use.");
+        return;
+      }
       const res = await createUser({email, password, name, phone});
       if (res.status !== 201 && res.status !== 200) {
         throw new Error("Registration failed");
