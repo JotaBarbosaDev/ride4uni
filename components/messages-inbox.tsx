@@ -34,10 +34,19 @@ export function MessagesInbox({className}: {className?: string}) {
       try {
         const userRes = await getCurrentUser();
         const me = userRes.data?.id ?? userRes.data?.userId ?? userRes.data;
-        setCurrentUserId(String(me));
+        const meId = String(me ?? "");
+        setCurrentUserId(meId || null);
 
         const chatsRes = await getUserChats(me);
         const rawChats: ChatApi[] = chatsRes.data ?? [];
+        const visibleChats = meId
+          ? rawChats.filter((chat) => {
+              const participants = (chat.participants ?? []).map(String);
+              if (!participants.length) return true;
+              const uniqueParticipants = new Set(participants);
+              return !(uniqueParticipants.size === 1 && uniqueParticipants.has(meId));
+            })
+          : rawChats;
 
         const getMessageTime = (message?: {
           timestamp?: string;
@@ -63,7 +72,7 @@ export function MessagesInbox({className}: {className?: string}) {
         };
 
         const resolved = await Promise.all(
-          rawChats.map(async (chat) => {
+          visibleChats.map(async (chat) => {
             const participantIds: string[] = chat.participants ?? [];
             const participantUsers = await Promise.all(
               participantIds.map(async (pid) => {
